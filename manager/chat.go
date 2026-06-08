@@ -27,7 +27,10 @@ const interruptMessage = "interrupted"
 
 func CollectQuota(c *gin.Context, user *auth.User, buffer *utils.Buffer, uncountable bool, err error) {
 	db := utils.GetDBFromContext(c)
-	quota := buffer.GetQuota()
+	// Use GetRecordQuota() instead of GetQuota() to get accurate token count
+	// GetQuota() uses b.Times during streaming which can be inaccurate
+	// GetRecordQuota() uses actual token count from the response
+	quota := buffer.GetRecordQuota()
 
 	if user == nil {
 		return
@@ -46,8 +49,13 @@ func CollectQuota(c *gin.Context, user *auth.User, buffer *utils.Buffer, uncount
 	}
 
 	if !uncountable {
-		user.UseQuota(db, quota)
+		if user.UseQuota(db, quota) {
+			recordModelCall(db, user, buffer, quota)
+		}
+		return
 	}
+
+	recordModelCall(db, user, buffer, 0)
 }
 
 type partialChunk struct {
@@ -92,6 +100,8 @@ func createChatTask(
 	chunkChan := make(chan partialChunk, 24) // the channel to send the chunk data
 	interruptSignal := make(chan error, 1)   // the signal to interrupt the chat task routine
 	stopSignal := createStopSignal(conn)     // the signal to stop from the client
+	upstreamUser, metadata := chatnioUpstreamIdentity(db, user)
+	metadata = setChatnioMetadataValue(metadata, "chat_id", fmt.Sprintf("%d", instance.GetId()))
 
 	defer func() {
 		// close all channels
@@ -122,6 +132,8 @@ func createChatTask(
 				PresencePenalty:   instance.GetPresencePenalty(),
 				FrequencyPenalty:  instance.GetFrequencyPenalty(),
 				RepetitionPenalty: instance.GetRepetitionPenalty(),
+				User:              upstreamUser,
+				Metadata:          metadata,
 			}, buffer),
 
 			// the function to handle the chunk data
@@ -208,7 +220,14 @@ func ChatHandler(conn *Connection, user *auth.User, instance *conversation.Conve
 	cache := conn.GetCache()
 
 	model := instance.GetModel()
-	segment := adapter.ClearMessages(model, web.ToChatSearched(instance, restart))
+	segment := conversation.CopyMessage(instance.GetChatMessage(restart))
+	imageInputModel := channel.ConduitInstance != nil && channel.ConduitInstance.IsImageInputModel(model)
+	if instance.IsEnableWeb() && !shouldSkipWebSearch(model, segment) {
+		segment = web.ToSearched(true, segment)
+	}
+	if !imageInputModel {
+		segment = adapter.ClearMessages(model, segment)
+	}
 
 	check, plan := checkChatEnableState(db, cache, user, model, segment)
 	conn.Send(globals.ChatSegmentResponse{
@@ -254,7 +273,7 @@ func ChatHandler(conn *Connection, user *auth.User, instance *conversation.Conve
 
 	conn.Send(globals.ChatSegmentResponse{
 		End:   true,
-		Quota: buffer.GetQuota(),
+		Quota: buffer.GetRecordQuota(),
 		Plan:  plan,
 	})
 

@@ -24,7 +24,10 @@ func NativeChatHandler(c *gin.Context, user *auth.User, model string, message []
 		}
 	}()
 
-	segment := web.ToSearched(enableWeb, message)
+	segment := message
+	if enableWeb && !shouldSkipWebSearch(model, segment) {
+		segment = web.ToSearched(true, segment)
+	}
 
 	db := utils.GetDBFromContext(c)
 	cache := utils.GetCacheFromContext(c)
@@ -58,5 +61,5 @@ func NativeChatHandler(c *gin.Context, user *auth.User, model string, message []
 		CollectQuota(c, user, buffer, plan, err)
 	}
 
-	return buffer.ReadWithDefault(defaultMessage), buffer.GetQuota()
+	return buffer.ReadWithDefault(defaultMessage), buffer.GetRecordQuota()
 }

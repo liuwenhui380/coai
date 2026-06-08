@@ -43,14 +43,21 @@ func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) 
 		}
 	}
 
+	temperature := props.Temperature
+	topP := props.TopP
+	if globals.IsClaudeModel(props.OriginalModel, props.Model) {
+		temperature = nil
+		topP = nil
+	}
+
 	return ChatRequest{
 		Messages:         formatMessages(props),
 		MaxToken:         props.MaxTokens,
 		Stream:           stream,
 		PresencePenalty:  props.PresencePenalty,
 		FrequencyPenalty: props.FrequencyPenalty,
-		Temperature:      props.Temperature,
-		TopP:             props.TopP,
+		Temperature:      temperature,
+		TopP:             topP,
 		Tools:            props.Tools,
 		ToolChoice:       props.ToolChoice,
 	}
@@ -58,7 +65,7 @@ func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) 
 
 // CreateChatRequest is the native http request body for openai
 func (c *ChatInstance) CreateChatRequest(props *adaptercommon.ChatProps) (string, error) {
-	if globals.IsOpenAIDalleModel(props.Model) {
+	if globals.IsOpenAIImageGenerationModel(props.OriginalModel, props.Model) {
 		return c.CreateImage(props)
 	}
 
@@ -84,7 +91,7 @@ func (c *ChatInstance) CreateChatRequest(props *adaptercommon.ChatProps) (string
 
 // CreateStreamChatRequest is the stream response body for openai
 func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, callback globals.Hook) error {
-	if globals.IsOpenAIDalleModel(props.Model) {
+	if globals.IsOpenAIImageGenerationModel(props.OriginalModel, props.Model) {
 		if url, err := c.CreateImage(props); err != nil {
 			return err
 		} else {

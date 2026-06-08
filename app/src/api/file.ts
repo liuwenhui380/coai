@@ -18,6 +18,7 @@ type Model = {
   ocr_model?: boolean;
   vision_model?: boolean;
   reverse_model?: boolean;
+  tag?: string[];
 };
 
 export type FileArray = FileObject[];
@@ -59,7 +60,8 @@ export async function quickBlobParser(
   if (!model.reverse_model) {
     try {
       // if the file is an image, it will be parsed as an image by local parser first
-      const couldLocalVision = model.vision_model;
+      const couldLocalVision =
+        model.vision_model || model.tag?.includes("image-generation");
       if (couldLocalVision && file.type.startsWith("image/")) {
         console.log("[parser] hit image/* file, using local parser");
         // parse image as base64 (e.g. result: data:image/png;base64,xxx)

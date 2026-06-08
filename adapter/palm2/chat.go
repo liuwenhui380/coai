@@ -81,8 +81,8 @@ func (c *ChatInstance) GetPalm2ChatResponse(data interface{}) (string, error) {
 
 func (c *ChatInstance) GetGeminiChatResponse(data interface{}) (string, error) {
 	if form := utils.MapToStruct[GeminiChatResponse](data); form != nil {
-		if len(form.Candidates) != 0 && len(form.Candidates[0].Content.Parts) != 0 {
-			return form.Candidates[0].Content.Parts[0].Text, nil
+		if len(form.Candidates) != 0 && len(form.Candidates[0].Content.Parts) != 0 && form.Candidates[0].Content.Parts[0].Text != nil {
+			return *form.Candidates[0].Content.Parts[0].Text, nil
 		}
 	}
 
@@ -94,6 +94,10 @@ func (c *ChatInstance) GetGeminiChatResponse(data interface{}) (string, error) {
 }
 
 func (c *ChatInstance) CreateChatRequest(props *adaptercommon.ChatProps) (string, error) {
+	if globals.IsGoogleImagenModel(props.Model) {
+		return c.CreateImage(props)
+	}
+
 	uri := c.GetChatEndpoint(props.Model, false)
 
 	if props.Model == globals.ChatBison001 {
@@ -156,9 +160,9 @@ func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, c
 			ticks += 1
 
 			if form := utils.UnmarshalForm[GeminiStreamResponse](data); form != nil {
-				if len(form.Candidates) != 0 && len(form.Candidates[0].Content.Parts) != 0 {
+				if len(form.Candidates) != 0 && len(form.Candidates[0].Content.Parts) != 0 && form.Candidates[0].Content.Parts[0].Text != nil {
 					return callback(&globals.Chunk{
-						Content: form.Candidates[0].Content.Parts[0].Text,
+						Content: *form.Candidates[0].Content.Parts[0].Text,
 					})
 				}
 				return nil

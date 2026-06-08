@@ -24,7 +24,15 @@ export type ChargeFetchResponse = CommonResponse & {
 export async function listCharge(): Promise<ChargeListResponse> {
   try {
     const response = await axios.get("/admin/charge/list");
-    return response.data as ChargeListResponse;
+    const data = response.data as ChargeListResponse;
+    if (!data || typeof data !== "object" || !Array.isArray(data.data)) {
+      return {
+        status: false,
+        error: "Invalid charge response",
+        data: [],
+      };
+    }
+    return data;
   } catch (e) {
     return { status: false, error: getErrorMessage(e), data: [] };
   }

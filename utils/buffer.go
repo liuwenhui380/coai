@@ -89,9 +89,16 @@ func (b *Buffer) GetQuota() float32 {
 	return b.Quota + CountOutputToken(b.Charge, b.CountOutputToken(true))
 }
 
+func (b *Buffer) GetInputQuota() float32 {
+	return CountInputQuota(b.Charge, b.CountInputToken())
+}
+
+func (b *Buffer) GetOutputQuota(running bool) float32 {
+	return CountOutputToken(b.Charge, b.CountOutputToken(running))
+}
+
 func (b *Buffer) GetRecordQuota() float32 {
-	// end of the buffer, the output token is counted using the times
-	return b.Quota + CountOutputToken(b.Charge, b.CountOutputToken(false))
+	return b.GetInputQuota() + b.GetOutputQuota(false)
 }
 
 func (b *Buffer) Write(data string) string {

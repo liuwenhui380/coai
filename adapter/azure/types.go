@@ -101,8 +101,8 @@ type ImageSize string
 type ImageRequest struct {
 	Model  string    `json:"model"`
 	Prompt string    `json:"prompt"`
-	Size   ImageSize `json:"size"`
-	N      int       `json:"n"`
+	Size   ImageSize `json:"size,omitempty"`
+	N      int       `json:"n,omitempty"`
 }
 
 type ImageResponse struct {

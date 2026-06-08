@@ -73,13 +73,15 @@ type SearchState struct {
 }
 
 type commonState struct {
-	Article     []string `json:"article" mapstructure:"article"`
-	Generation  []string `json:"generation" mapstructure:"generation"`
-	Cache       []string `json:"cache" mapstructure:"cache"`
-	Expire      int64    `json:"expire" mapstructure:"expire"`
-	Size        int64    `json:"size" mapstructure:"size"`
-	ImageStore  bool     `json:"image_store" mapstructure:"imagestore"`
-	PromptStore bool     `json:"prompt_store" mapstructure:"promptstore"`
+	Article                   []string `json:"article" mapstructure:"article"`
+	Generation                []string `json:"generation" mapstructure:"generation"`
+	Cache                     []string `json:"cache" mapstructure:"cache"`
+	Expire                    int64    `json:"expire" mapstructure:"expire"`
+	Size                      int64    `json:"size" mapstructure:"size"`
+	ImageStore                bool     `json:"image_store" mapstructure:"imagestore"`
+	ImageDownloadProxyEnabled bool     `json:"image_download_proxy_enabled" mapstructure:"imagedownloadproxyenabled"`
+	ImageDownloadProxy        string   `json:"image_download_proxy" mapstructure:"imagedownloadproxy"`
+	PromptStore               bool     `json:"prompt_store" mapstructure:"promptstore"`
 }
 
 type SystemConfig struct {
@@ -114,6 +116,8 @@ func (c *SystemConfig) Load() {
 	globals.CacheAcceptedExpire = c.GetCacheAcceptedExpire()
 	globals.CacheAcceptedSize = c.GetCacheAcceptedSize()
 	globals.AcceptImageStore = c.AcceptImageStore()
+	globals.ImageDownloadProxyEnabled = c.Common.ImageDownloadProxyEnabled
+	globals.ImageDownloadProxy = strings.TrimSpace(c.Common.ImageDownloadProxy)
 
 	globals.AcceptPromptStore = c.Common.PromptStore
 

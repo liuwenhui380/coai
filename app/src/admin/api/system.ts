@@ -151,6 +151,8 @@ export type CommonState = {
 
   prompt_store: boolean;
   image_store: boolean;
+  image_download_proxy_enabled: boolean;
+  image_download_proxy: string;
 };
 
 export type SystemProps = {
@@ -233,6 +235,8 @@ export const initialSystemState: SystemProps = {
     size: 1,
     prompt_store: false,
     image_store: false,
+    image_download_proxy_enabled: false,
+    image_download_proxy: "",
   },
   payment: {
     stripe: {
@@ -300,6 +304,10 @@ export async function getConfig(): Promise<SystemResponse> {
           : 1000;
 
       data.data.site.currency = data.data.site.currency || "cny";
+      data.data.common.image_download_proxy_enabled =
+        !!data.data.common.image_download_proxy_enabled;
+      data.data.common.image_download_proxy =
+        data.data.common.image_download_proxy || "";
 
       if (
         !data.data.common.group ||

@@ -19,6 +19,7 @@ func GetInfo(c *gin.Context) {
 func AttachmentService(c *gin.Context) {
 	// /attachments/:hash -> ~/storage/attachments/:hash
 	hash := c.Param("hash")
+	c.Header("Cache-Control", "no-store")
 	c.File(fmt.Sprintf("storage/attachments/%s", hash))
 }
 

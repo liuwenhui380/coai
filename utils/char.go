@@ -253,7 +253,7 @@ func ExtractImagesFromMarkdown(data string) (images []string) {
 
 func ExtractBase64FromMarkdown(data string) (images []string) {
 	// extract base64 images like `![image](data:image/png;base64,xxxxxx)`
-	re := regexp.MustCompile(`!\[.*?\]\((data:image/\w+;base64,[\w+/=]+)\)`)
+	re := regexp.MustCompile(`!\[.*?\]\((data:image/[a-zA-Z0-9.+-]+(?:;[a-zA-Z0-9.+-]+=[^;,\s)]+)*;base64,[A-Za-z0-9+/=_-]+)\)`)
 	matches := re.FindAllStringSubmatch(data, -1)
 
 	for _, match := range matches {
@@ -268,7 +268,7 @@ func ExtractBase64FromMarkdown(data string) (images []string) {
 
 func ExtractBase64Images(data string) []string {
 	// get base64 images from data (data:image/png;base64,xxxxxx) (\n \\n [space] \\t \\r \\v \\f break the base64 string)
-	re := regexp.MustCompile(`(data:image/\w+;base64,[\w+/=]+)`)
+	re := regexp.MustCompile(`(data:image/[a-zA-Z0-9.+-]+(?:;[a-zA-Z0-9.+-]+=[^;,\s)]+)*;base64,[A-Za-z0-9+/=_-]+)`)
 	return re.FindAllString(data, -1)
 }
 

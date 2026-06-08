@@ -93,9 +93,11 @@ func IncrIP(cache *redis.Client, ip string) int64 {
 
 func IncrWithExpire(cache *redis.Client, key string, delta int64, expiration time.Duration) {
 	_, err := Incr(cache, key, delta)
-	if err != nil && errors.Is(err, redis.Nil) {
-		cache.Set(context.Background(), key, delta, expiration)
+	if err != nil {
+		return
 	}
+
+	cache.Expire(context.Background(), key, expiration)
 }
 
 func IncrOnce(cache *redis.Client, key string, expiration time.Duration) {

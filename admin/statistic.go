@@ -35,5 +35,8 @@ func AnalyseRequest(model string, buffer *utils.Buffer, err error) {
 	}
 
 	IncrRequest(instance)
-	IncrModelRequest(instance, model, int64(buffer.CountToken()))
+	// Use accurate token count: CountOutputToken(false) uses actual token count
+	// instead of b.Times which is just an estimate during streaming
+	token := int64(buffer.CountInputToken() + buffer.CountOutputToken(false))
+	IncrModelRequest(instance, model, token)
 }

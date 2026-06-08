@@ -3,6 +3,7 @@ package admin
 import (
 	"chat/globals"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -23,6 +24,26 @@ type Market struct {
 	Models MarketModelList `json:"models" mapstructure:"models"`
 }
 
+func (tag ModelTag) Contains(value string) bool {
+	value = strings.ToLower(strings.TrimSpace(value))
+	for _, item := range tag {
+		if strings.ToLower(strings.TrimSpace(item)) == value {
+			return true
+		}
+	}
+	return false
+}
+
+func (m *Market) LoadCapabilities() {
+	models := make([]string, 0)
+	for _, model := range m.Models {
+		if model.Tag.Contains("image-generation") {
+			models = append(models, strings.ToLower(strings.TrimSpace(model.Id)))
+		}
+	}
+	globals.ImageGenerationModels = models
+}
+
 func NewMarket() *Market {
 	var models MarketModelList
 	if err := viper.UnmarshalKey("market", &models); err != nil {
@@ -30,9 +51,11 @@ func NewMarket() *Market {
 		models = MarketModelList{}
 	}
 
-	return &Market{
+	market := &Market{
 		Models: models,
 	}
+	market.LoadCapabilities()
+	return market
 }
 
 func (m *Market) GetModels() MarketModelList {
@@ -55,5 +78,6 @@ func (m *Market) SaveConfig() error {
 
 func (m *Market) SetModels(models MarketModelList) error {
 	m.Models = models
+	m.LoadCapabilities()
 	return m.SaveConfig()
 }

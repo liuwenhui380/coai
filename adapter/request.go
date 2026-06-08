@@ -50,7 +50,7 @@ func NewChatRequest(conf globals.ChannelConfig, props *adaptercommon.ChatProps, 
 }
 
 func ClearMessages(model string, messages []globals.Message) []globals.Message {
-	if globals.IsVisionModel(model) {
+	if globals.IsVisionModel(model) || globals.IsOpenAIImageGenerationModel(model) {
 		return messages
 	}
 

@@ -22,17 +22,24 @@ func (c *ChatInstance) GetImageEndpoint(model string) string {
 
 // CreateImageRequest will create a dalle image from prompt, return url of image, base64 data and error
 func (c *ChatInstance) CreateImageRequest(props ImageProps) (string, string, error) {
+	body := ImageRequest{
+		Prompt: props.Prompt,
+	}
+	if !globals.IsOpenAIGPTImageModel(props.Model) {
+		body.Size = utils.Multi[ImageSize](
+			props.Model == globals.Dalle3 || props.Model == globals.GPTImage1,
+			ImageSize1024,
+			ImageSize512,
+		)
+		body.N = 1
+	}
+
 	res, err := utils.Post(
 		c.GetImageEndpoint(props.Model),
-		c.GetHeader(), ImageRequest{
-			Prompt: props.Prompt,
-			Size: utils.Multi[ImageSize](
-				props.Model == globals.Dalle3 || props.Model == globals.GPTImage1,
-				ImageSize1024,
-				ImageSize512,
-			),
-			N: 1,
-		}, props.Proxy)
+		c.GetHeader(),
+		body,
+		props.Proxy,
+	)
 	if err != nil || res == nil {
 		return "", "", fmt.Errorf("openai error: %s", err.Error())
 	}
@@ -44,8 +51,10 @@ func (c *ChatInstance) CreateImageRequest(props ImageProps) (string, string, err
 		return "", "", fmt.Errorf("openai error: %s", data.Error.Message)
 	}
 
-	// for gpt-image-1, return base64 data if available
-	if props.Model == globals.GPTImage1 && data.Data[0].B64Json != "" {
+	if len(data.Data) == 0 {
+		return "", "", fmt.Errorf("openai error: empty image response")
+	}
+	if data.Data[0].B64Json != "" {
 		return "", data.Data[0].B64Json, nil
 	}
 
@@ -67,8 +76,10 @@ func (c *ChatInstance) CreateImage(props *adaptercommon.ChatProps) (string, erro
 	}
 
 	if b64Json != "" {
-		return utils.GetBase64ImageMarkdown(b64Json), nil
+		storedUrl := utils.StoreImage(fmt.Sprintf("data:image/png;base64,%s", b64Json))
+		return utils.GetImageMarkdown(storedUrl), nil
 	}
 
-	return utils.GetImageMarkdown(url), nil
+	storedUrl := utils.StoreImageWithProxy(url, props.Proxy)
+	return utils.GetImageMarkdown(storedUrl), nil
 }

@@ -11,6 +11,8 @@ import (
 
 const defaultConversationName = "new chat"
 const defaultConversationContext = 8
+const maxConversationContext = 10   // Maximum number of messages to keep
+const maxConversationTokens = 64000 // Maximum tokens (64k) for context
 
 type Conversation struct {
 	Auth      bool              `json:"auth"`
@@ -249,13 +251,20 @@ func (c *Conversation) GetChatMessage(restart bool) []globals.Message {
 		}
 
 		if c.GetContextLength() > len(cp) {
-			return cp
+			// Apply token limit even if context length is larger
+			return utils.TrimMessagesByTokenLimit(cp, c.Model, maxConversationTokens, maxConversationContext)
 		}
 
-		return cp[len(cp)-c.GetContextLength():]
+		// Get last N messages based on context length
+		trimmed := cp[len(cp)-c.GetContextLength():]
+		// Apply token limit to ensure we don't exceed 64k tokens
+		return utils.TrimMessagesByTokenLimit(trimmed, c.Model, maxConversationTokens, maxConversationContext)
 	}
 
-	return c.GetMessageSegment(c.GetContextLength())
+	// Get last N messages based on context length
+	segment := c.GetMessageSegment(c.GetContextLength())
+	// Apply token limit to ensure we don't exceed 64k tokens
+	return utils.TrimMessagesByTokenLimit(segment, c.Model, maxConversationTokens, maxConversationContext)
 }
 
 func CopyMessage(message []globals.Message) []globals.Message {

@@ -25,8 +25,8 @@ type ChatBody struct {
 	Model       string    `json:"model"`
 	System      string    `json:"system"`
 	Stream      bool      `json:"stream"`
-	Temperature *float32  `json:"temperature,omitempty"`
-	TopP        *float32  `json:"top_p,omitempty"`
+	Temperature *float32  `json:"-"`
+	TopP        *float32  `json:"-"`
 	TopK        *int      `json:"top_k,omitempty"`
 }
 

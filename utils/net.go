@@ -12,14 +12,19 @@ import (
 	"net/url"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/goccy/go-json"
 	"golang.org/x/net/proxy"
 )
 
 func newClient(c []globals.ProxyConfig) *http.Client {
+	return newClientWithTimeout(c, globals.HttpMaxTimeout)
+}
+
+func newClientWithTimeout(c []globals.ProxyConfig, timeout time.Duration) *http.Client {
 	client := &http.Client{
-		Timeout: globals.HttpMaxTimeout,
+		Timeout: timeout,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
@@ -84,6 +89,10 @@ func fillHeaders(req *http.Request, headers map[string]string) {
 }
 
 func Http(uri string, method string, ptr interface{}, headers map[string]string, body io.Reader, config []globals.ProxyConfig) (err error) {
+	return HttpWithTimeout(uri, method, ptr, headers, body, config, globals.HttpMaxTimeout)
+}
+
+func HttpWithTimeout(uri string, method string, ptr interface{}, headers map[string]string, body io.Reader, config []globals.ProxyConfig, timeout time.Duration) (err error) {
 	if globals.DebugMode {
 		globals.Debug(fmt.Sprintf("[http] %s %s\nheaders: \n%s\nbody: \n%s", method, uri, Marshal(headers), Marshal(body)))
 	}
@@ -98,7 +107,7 @@ func Http(uri string, method string, ptr interface{}, headers map[string]string,
 	}
 	fillHeaders(req, headers)
 
-	client := newClient(config)
+	client := newClientWithTimeout(config, timeout)
 	resp, err := client.Do(req)
 	if err != nil {
 		if globals.DebugMode {
@@ -180,6 +189,11 @@ func GetRaw(uri string, headers map[string]string, config ...globals.ProxyConfig
 
 func Post(uri string, headers map[string]string, body interface{}, config ...globals.ProxyConfig) (data interface{}, err error) {
 	err = Http(uri, http.MethodPost, &data, headers, ConvertBody(body), config)
+	return data, err
+}
+
+func PostWithTimeout(uri string, headers map[string]string, body interface{}, timeout time.Duration, config ...globals.ProxyConfig) (data interface{}, err error) {
+	err = HttpWithTimeout(uri, http.MethodPost, &data, headers, ConvertBody(body), config, timeout)
 	return data, err
 }
 

@@ -38,6 +38,8 @@ type ChatRequest struct {
 	TopP                *float32               `json:"top_p,omitempty"`
 	Tools               *globals.FunctionTools `json:"tools,omitempty"`
 	ToolChoice          *interface{}           `json:"tool_choice,omitempty"` // string or object
+	User                string                 `json:"user,omitempty"`
+	Metadata            map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // CompletionRequest is the request body for openai completion
@@ -100,10 +102,12 @@ type ImageSize string
 
 // ImageRequest is the request body for openai dalle image generation
 type ImageRequest struct {
-	Model  string    `json:"model"`
-	Prompt string    `json:"prompt"`
-	Size   ImageSize `json:"size"`
-	N      int       `json:"n"`
+	Model    string                 `json:"model"`
+	Prompt   string                 `json:"prompt"`
+	Size     ImageSize              `json:"size,omitempty"`
+	N        int                    `json:"n,omitempty"`
+	User     string                 `json:"user,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type ImageResponse struct {

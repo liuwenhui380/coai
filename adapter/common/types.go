@@ -28,6 +28,8 @@ type ChatProps struct {
 	TopK              *int                   `json:"top_k,omitempty"`
 	Tools             *globals.FunctionTools `json:"tools,omitempty"`
 	ToolChoice        *interface{}           `json:"tool_choice,omitempty"`
+	User              string                 `json:"user,omitempty"`
+	Metadata          map[string]interface{} `json:"metadata,omitempty"`
 	Buffer            *utils.Buffer          `json:"-"`
 }
 

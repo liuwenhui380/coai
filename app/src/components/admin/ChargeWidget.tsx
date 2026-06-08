@@ -693,7 +693,7 @@ function ChargeTable({ data, dispatch, onRefresh }: ChargeTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((charge, idx) => (
+          {(data || []).map((charge, idx) => (
             <TableRow key={idx}>
               <TableCell className={`charge-id`}>{charge.id}</TableCell>
               <TableCell>
@@ -768,11 +768,11 @@ function ChargeWidget() {
   const { allModels, update } = useAllModels();
 
   const currentModels = useMemo(() => {
-    return data.flatMap((charge) => charge.models);
+    return (data || []).flatMap((charge) => charge.models || []);
   }, [data]);
 
   const usedModels = useMemo((): string[] => {
-    return data.flatMap((charge) => charge.models);
+    return (data || []).flatMap((charge) => charge.models || []);
   }, [data]);
 
   const unusedModels = useMemo(() => {
@@ -789,7 +789,7 @@ function ChargeWidget() {
 
     setLoading(false);
     withNotify(t, resp);
-    setData(resp.data);
+    setData(resp.data || []);
   }
 
   useEffectAsync(async () => await refresh(true), []);

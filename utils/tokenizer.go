@@ -8,6 +8,8 @@ import (
 	"github.com/pkoukk/tiktoken-go"
 )
 
+const base64ImageTokenEstimate = 1000
+
 //   Using https://github.com/pkoukk/tiktoken-go
 //   To count number of tokens of openai chat messages
 //   OpenAI Cookbook: https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
@@ -107,4 +109,146 @@ func CountOutputToken(charge Charge, token int) float32 {
 	default:
 		return 0
 	}
+}
+
+// TrimMessagesByTokenLimit trims messages to fit within token and count limits.
+// maxTokens: maximum total tokens allowed (e.g., 64000 for 64k)
+// maxMessages: maximum number of messages allowed (e.g., 10)
+// Returns trimmed messages from the end, ensuring limits are respected
+func TrimMessagesByTokenLimit(messages []globals.Message, model string, maxTokens int, maxMessages int) []globals.Message {
+	if len(messages) == 0 {
+		return messages
+	}
+
+	// First, limit by message count
+	startIdx := 0
+	if len(messages) > maxMessages {
+		startIdx = len(messages) - maxMessages
+	}
+
+	trimmed := append([]globals.Message(nil), messages[startIdx:]...)
+
+	// Then, limit by token count
+	// Calculate tokens from the end, removing oldest messages if needed
+	for len(trimmed) > 0 {
+		tokens := numTokensFromMessagesForTokenLimit(trimmed, model, false)
+		if tokens <= maxTokens {
+			break
+		}
+
+		if len(trimmed) == 1 {
+			trimmed[0] = truncateMessageByTokenLimit(trimmed[0], model, maxTokens)
+			break
+		}
+
+		// Remove the oldest message and try again
+		trimmed = trimmed[1:]
+	}
+
+	return trimmed
+}
+
+func truncateMessageByTokenLimit(message globals.Message, model string, maxTokens int) globals.Message {
+	if numTokensFromMessagesForTokenLimit([]globals.Message{message}, model, false) <= maxTokens {
+		return message
+	}
+
+	images := ExtractBase64Images(message.Content)
+	runes := []rune(message.Content)
+	if len(images) > 0 {
+		runes = []rune(nonImageTextForTokenLimit(message.Content, images))
+	}
+
+	low, high := 0, len(runes)
+	best := ""
+	if len(images) > 0 {
+		best = preserveBase64ImagesWithTextLimit(message.Content, images, 0)
+	}
+
+	for low <= high {
+		mid := (low + high) / 2
+		candidate := message
+		if len(images) > 0 {
+			candidate.Content = preserveBase64ImagesWithTextLimit(message.Content, images, mid)
+		} else {
+			candidate.Content = string(runes[:mid])
+		}
+
+		if numTokensFromMessagesForTokenLimit([]globals.Message{candidate}, model, false) <= maxTokens {
+			best = candidate.Content
+			low = mid + 1
+		} else {
+			high = mid - 1
+		}
+	}
+
+	message.Content = best
+	return message
+}
+
+func numTokensFromMessagesForTokenLimit(messages []globals.Message, model string, responseType bool) int {
+	if len(messages) == 0 {
+		return 0
+	}
+
+	imageTokens := 0
+	sanitized := append([]globals.Message(nil), messages...)
+	for idx, message := range sanitized {
+		images := ExtractBase64Images(message.Content)
+		if len(images) == 0 {
+			continue
+		}
+
+		imageTokens += len(images) * base64ImageTokenEstimate
+		sanitized[idx].Content = removeBase64ImagesForTokenLimit(message.Content, images)
+	}
+
+	return NumTokensFromMessages(sanitized, model, responseType) + imageTokens
+}
+
+func removeBase64ImagesForTokenLimit(content string, images []string) string {
+	for _, image := range images {
+		content = strings.ReplaceAll(content, image, "")
+	}
+	return content
+}
+
+func nonImageTextForTokenLimit(content string, images []string) string {
+	return removeBase64ImagesForTokenLimit(content, images)
+}
+
+func preserveBase64ImagesWithTextLimit(content string, images []string, maxTextRunes int) string {
+	var result strings.Builder
+	remaining := maxTextRunes
+	rest := content
+
+	for _, image := range images {
+		index := strings.Index(rest, image)
+		if index < 0 {
+			continue
+		}
+
+		result.WriteString(takeRunes(rest[:index], &remaining))
+		result.WriteString(image)
+		rest = rest[index+len(image):]
+	}
+
+	result.WriteString(takeRunes(rest, &remaining))
+	return result.String()
+}
+
+func takeRunes(content string, remaining *int) string {
+	if *remaining <= 0 || content == "" {
+		return ""
+	}
+
+	runes := []rune(content)
+	if len(runes) <= *remaining {
+		*remaining -= len(runes)
+		return content
+	}
+
+	part := string(runes[:*remaining])
+	*remaining = 0
+	return part
 }

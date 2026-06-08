@@ -118,6 +118,34 @@ func (m *Manager) HasChannel(model string) bool {
 	return utils.Contains(model, m.Models)
 }
 
+func (m *Manager) IsVisionModel(model string) bool {
+	if globals.IsVisionModel(model) {
+		return true
+	}
+
+	for _, channel := range m.HitSequence(model) {
+		if channel != nil && globals.IsVisionModel(channel.GetModelReflect(model)) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (m *Manager) IsImageInputModel(model string) bool {
+	if m.IsVisionModel(model) || globals.IsOpenAIImageGenerationModel(model) {
+		return true
+	}
+
+	for _, channel := range m.HitSequence(model) {
+		if channel != nil && globals.IsOpenAIImageGenerationModel(channel.GetModelReflect(model)) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (m *Manager) GetTicker(model, group string) *Ticker {
 	if !m.HasChannel(model) {
 		return nil

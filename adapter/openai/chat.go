@@ -2,6 +2,7 @@ package openai
 
 import (
 	adaptercommon "chat/adapter/common"
+	"chat/adapter/palm2"
 	"chat/globals"
 	"chat/utils"
 	"errors"
@@ -50,11 +51,17 @@ func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) 
 	isNewModel := len(props.Model) >= 2 && (props.Model[:2] == "o1" || props.Model[:2] == "o3") || strings.HasPrefix(props.Model, "gpt-5")
 
 	var temperature *float32
-	if isNewModel {
+	if globals.IsClaudeModel(props.OriginalModel, props.Model) {
+		temperature = nil
+	} else if isNewModel {
 		temp := float32(1.0)
 		temperature = &temp
 	} else {
 		temperature = props.Temperature
+	}
+	topP := props.TopP
+	if globals.IsClaudeModel(props.OriginalModel, props.Model) {
+		topP = nil
 	}
 
 	request := ChatRequest{
@@ -64,9 +71,11 @@ func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) 
 		PresencePenalty:  props.PresencePenalty,
 		FrequencyPenalty: props.FrequencyPenalty,
 		Temperature:      temperature,
-		TopP:             props.TopP,
+		TopP:             topP,
 		Tools:            props.Tools,
 		ToolChoice:       props.ToolChoice,
+		User:             props.User,
+		Metadata:         props.Metadata,
 	}
 
 	if isNewModel {
@@ -79,7 +88,11 @@ func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) 
 
 // CreateChatRequest is the native http request body for openai
 func (c *ChatInstance) CreateChatRequest(props *adaptercommon.ChatProps) (string, error) {
-	if globals.IsOpenAIDalleModel(props.Model) {
+	if globals.IsGeminiImageModel(props.Model) {
+		return palm2.NewChatInstance(c.GetEndpoint(), c.GetApiKey()).CreateImage(props)
+	}
+
+	if globals.IsOpenAIImageGenerationModel(props.OriginalModel, props.Model) {
 		return c.CreateImage(props)
 	}
 
@@ -100,7 +113,7 @@ func (c *ChatInstance) CreateChatRequest(props *adaptercommon.ChatProps) (string
 	} else if data.Error.Message != "" {
 		return "", fmt.Errorf("openai error: %s", data.Error.Message)
 	}
-	return data.Choices[0].Message.Content, nil
+	return utils.StoreImagesInMarkdown(data.Choices[0].Message.Content, props.Proxy), nil
 }
 
 func hideRequestId(message string) string {
@@ -112,7 +125,27 @@ func hideRequestId(message string) string {
 
 // CreateStreamChatRequest is the stream response body for openai
 func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, callback globals.Hook) error {
-	if globals.IsOpenAIDalleModel(props.Model) {
+	if globals.IsGeminiImageModel(props.Model) {
+		if err := callback(&globals.Chunk{
+			Content: "正在生成图片，请稍候...\n\n",
+		}); err != nil {
+			return err
+		}
+		if url, err := palm2.NewChatInstance(c.GetEndpoint(), c.GetApiKey()).CreateImage(props); err != nil {
+			return err
+		} else {
+			return callback(&globals.Chunk{
+				Content: url,
+			})
+		}
+	}
+
+	if globals.IsOpenAIImageGenerationModel(props.OriginalModel, props.Model) {
+		if err := callback(&globals.Chunk{
+			Content: "正在生成图片，请稍候...\n\n",
+		}); err != nil {
+			return err
+		}
 		if url, err := c.CreateImage(props); err != nil {
 			return err
 		} else {

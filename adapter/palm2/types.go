@@ -31,10 +31,11 @@ type GeminiChatBody struct {
 }
 
 type GeminiConfig struct {
-	Temperature     *float32 `json:"temperature,omitempty"`
-	MaxOutputTokens *int     `json:"maxOutputTokens,omitempty"`
-	TopP            *float32 `json:"topP,omitempty"`
-	TopK            *int     `json:"topK,omitempty"`
+	Temperature        *float32 `json:"temperature,omitempty"`
+	MaxOutputTokens    *int     `json:"maxOutputTokens,omitempty"`
+	TopP               *float32 `json:"topP,omitempty"`
+	TopK               *int     `json:"topK,omitempty"`
+	ResponseModalities []string `json:"responseModalities,omitempty"`
 }
 
 type GeminiContent struct {
@@ -55,10 +56,8 @@ type GeminiInlineData struct {
 type GeminiChatResponse struct {
 	Candidates []struct {
 		Content struct {
-			Parts []struct {
-				Text string `json:"text"`
-			} `json:"parts"`
-			Role string `json:"role"`
+			Parts []GeminiChatPart `json:"parts"`
+			Role  string           `json:"role"`
 		} `json:"content"`
 	} `json:"candidates"`
 }
@@ -74,10 +73,8 @@ type GeminiChatErrorResponse struct {
 type GeminiStreamResponse struct {
 	Candidates []struct {
 		Content struct {
-			Parts []struct {
-				Text string `json:"text"`
-			} `json:"parts"`
-			Role string `json:"role"`
+			Parts []GeminiChatPart `json:"parts"`
+			Role  string           `json:"role"`
 		} `json:"content"`
 	} `json:"candidates"`
 }

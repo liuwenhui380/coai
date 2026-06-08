@@ -2,7 +2,6 @@ package connection
 
 import (
 	"chat/globals"
-	"context"
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/spf13/viper"
@@ -39,8 +38,7 @@ func ConnectRedis() *redis.Client {
 	}
 
 	if viper.GetBool("debug") {
-		Cache.FlushAll(context.Background())
-		globals.Debug(fmt.Sprintf("[connection] flush redis cache (host: %s)", viper.GetString("redis.host")))
+		globals.Warn("[connection] debug=true detected; startup Redis flush is disabled for safety")
 	}
 	return Cache
 }

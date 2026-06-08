@@ -76,7 +76,9 @@ func ChatRelayAPI(c *gin.Context) {
 		suffix := strings.TrimPrefix(form.Model, "web-")
 
 		form.Model = suffix
-		messages = web.ToSearched(true, messages)
+		if !shouldSkipWebSearch(form.Model, messages) {
+			messages = web.ToSearched(true, messages)
+		}
 	}
 
 	if strings.HasSuffix(form.Model, "-official") {
@@ -97,7 +99,8 @@ func ChatRelayAPI(c *gin.Context) {
 	}
 }
 
-func getChatProps(form RelayForm, messages []globals.Message, buffer *utils.Buffer) *adaptercommon.ChatProps {
+func getChatProps(form RelayForm, messages []globals.Message, buffer *utils.Buffer, db *sql.DB, user *auth.User) *adaptercommon.ChatProps {
+	upstreamUser, metadata := chatnioUpstreamIdentity(db, user)
 	return adaptercommon.CreateChatProps(&adaptercommon.ChatProps{
 		Model:             form.Model,
 		Message:           messages,
@@ -110,7 +113,47 @@ func getChatProps(form RelayForm, messages []globals.Message, buffer *utils.Buff
 		TopK:              form.TopK,
 		Tools:             form.Tools,
 		ToolChoice:        form.ToolChoice,
+		User:              upstreamUser,
+		Metadata:          metadata,
 	}, buffer)
+}
+
+func chatnioUpstreamIdentity(db *sql.DB, user *auth.User) (string, map[string]interface{}) {
+	if user == nil {
+		return "", nil
+	}
+
+	parts := make([]string, 0, 2)
+	userID := user.HitID()
+	if userID <= 0 && db != nil {
+		userID = user.GetID(db)
+	}
+	if userID > 0 {
+		parts = append(parts, fmt.Sprintf("%d", userID))
+	}
+	if username := strings.TrimSpace(user.Username); username != "" {
+		parts = append(parts, username)
+	}
+	if len(parts) == 0 {
+		return "", nil
+	}
+
+	hash := utils.Sha2Encrypt(strings.Join(parts, ":"))
+	return "chatnio-" + hash[:16], map[string]interface{}{
+		"chatnio_user_hash": hash,
+	}
+}
+
+func setChatnioMetadataValue(metadata map[string]interface{}, key, value string) map[string]interface{} {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return metadata
+	}
+	if metadata == nil {
+		metadata = map[string]interface{}{}
+	}
+	metadata[key] = value
+	return metadata
 }
 
 func sendTranshipmentResponse(c *gin.Context, form RelayForm, messages []globals.Message, id string, created int64, user *auth.User, plan bool) {
@@ -118,7 +161,7 @@ func sendTranshipmentResponse(c *gin.Context, form RelayForm, messages []globals
 	cache := utils.GetCacheFromContext(c)
 
 	buffer := utils.NewBuffer(form.Model, messages, channel.ChargeInstance.GetCharge(form.Model))
-	hit, err := channel.NewChatRequestWithCache(cache, buffer, auth.GetGroup(db, user), getChatProps(form, messages, buffer), func(data *globals.Chunk) error {
+	hit, err := channel.NewChatRequestWithCache(cache, buffer, auth.GetGroup(db, user), getChatProps(form, messages, buffer, db, user), func(data *globals.Chunk) error {
 		buffer.WriteChunk(data)
 		return nil
 	})
@@ -158,9 +201,9 @@ func sendTranshipmentResponse(c *gin.Context, form RelayForm, messages []globals
 		Usage: Usage{
 			PromptTokens:     buffer.CountInputToken(),
 			CompletionTokens: buffer.CountOutputToken(false),
-			TotalTokens:      buffer.CountToken(),
+			TotalTokens:      buffer.CountInputToken() + buffer.CountOutputToken(false),
 		},
-		Quota: utils.Multi[*float32](form.Official, nil, utils.ToPtr(buffer.GetQuota())),
+		Quota: utils.Multi[*float32](form.Official, nil, utils.ToPtr(buffer.GetRecordQuota())),
 	})
 }
 
@@ -189,6 +232,12 @@ func getRole(data *globals.Chunk) string {
 }
 
 func getStreamTranshipmentForm(id string, created int64, form RelayForm, data *globals.Chunk, buffer *utils.Buffer, end bool, err error) RelayStreamResponse {
+	outputTokens := buffer.CountOutputToken(!end)
+	quota := buffer.GetQuota()
+	if end {
+		quota = buffer.GetRecordQuota()
+	}
+
 	return RelayStreamResponse{
 		Id:      fmt.Sprintf("chatcmpl-%s", id),
 		Object:  "chat.completion.chunk",
@@ -208,10 +257,10 @@ func getStreamTranshipmentForm(id string, created int64, form RelayForm, data *g
 		},
 		Usage: Usage{
 			PromptTokens:     buffer.CountInputToken(),
-			CompletionTokens: buffer.CountOutputToken(true),
-			TotalTokens:      buffer.CountToken(),
+			CompletionTokens: outputTokens,
+			TotalTokens:      buffer.CountInputToken() + outputTokens,
 		},
-		Quota: utils.Multi[*float32](form.Official, nil, utils.ToPtr(buffer.GetQuota())),
+		Quota: utils.Multi[*float32](form.Official, nil, utils.ToPtr(quota)),
 		Error: err,
 	}
 }
@@ -227,7 +276,7 @@ func sendStreamTranshipmentResponse(c *gin.Context, form RelayForm, messages []g
 	go func() {
 		buffer := utils.NewBuffer(form.Model, messages, charge)
 		hit, err := channel.NewChatRequestWithCache(
-			cache, buffer, group, getChatProps(form, messages, buffer),
+			cache, buffer, group, getChatProps(form, messages, buffer, db, user),
 			func(data *globals.Chunk) error {
 				buffer.WriteChunk(data)
 

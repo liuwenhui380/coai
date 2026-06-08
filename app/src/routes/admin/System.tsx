@@ -695,6 +695,37 @@ function Common({ form, data, dispatch, onChange }: CompProps<CommonState>) {
       <ParagraphSpace />
       <ParagraphItem>
         <Label className={`flex flex-row items-center`}>
+          {t("admin.system.imageDownloadProxy")}
+          <Tips content={t("admin.system.imageDownloadProxyTip")} />
+        </Label>
+        <Switch
+          checked={data.image_download_proxy_enabled}
+          onCheckedChange={(value) => {
+            dispatch({
+              type: "update:common.image_download_proxy_enabled",
+              value,
+            });
+          }}
+        />
+      </ParagraphItem>
+      {data.image_download_proxy_enabled && (
+        <ParagraphItem>
+          <Label>{t("admin.system.imageDownloadProxyUrl")}</Label>
+          <Input
+            value={data.image_download_proxy}
+            placeholder={t("admin.system.imageDownloadProxyPlaceholder")}
+            onChange={(e) =>
+              dispatch({
+                type: "update:common.image_download_proxy",
+                value: e.target.value,
+              })
+            }
+          />
+        </ParagraphItem>
+      )}
+      <ParagraphSpace />
+      <ParagraphItem>
+        <Label className={`flex flex-row items-center`}>
           {t("admin.system.cache")}
           <Tips content={t("admin.system.cacheTip")} />
         </Label>

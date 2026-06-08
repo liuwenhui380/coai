@@ -23,9 +23,12 @@ var CacheAcceptedModels []string
 var CacheAcceptedExpire int64
 var CacheAcceptedSize int64
 var AcceptImageStore bool
+var ImageDownloadProxyEnabled bool
+var ImageDownloadProxy string
 var AcceptPromptStore bool
 var CloseRegistration bool
 var CloseRelay bool
+var ImageGenerationModels []string
 
 var SearchEndpoint string
 var SearchCrop bool
@@ -89,6 +92,10 @@ const (
 	GPT4O                        = "gpt-4o"
 	GPT4O20240513                = "gpt-4o-2024-05-13"
 	GPTImage1                    = "gpt-image-1"
+	GPTImage2                    = "gpt-image-2"
+	ChatGPTImageLatest           = "chatgpt-image-latest"
+	GrokImagineImage             = "grok-imagine-image"
+	GrokImagineImageQuality      = "grok-imagine-image-quality"
 	Dalle                        = "dalle"
 	Dalle2                       = "dall-e-2"
 	Dalle3                       = "dall-e-3"
@@ -148,7 +155,7 @@ const (
 )
 
 var OpenAIDalleModels = []string{
-	Dalle, Dalle2, Dalle3, GPTImage1,
+	Dalle, Dalle2, Dalle3, GPTImage1, GPTImage2, ChatGPTImageLatest, GrokImagineImage, GrokImagineImageQuality,
 }
 
 var GoogleImagenModels = []string{
@@ -180,11 +187,83 @@ func IsOpenAIDalleModel(model string) bool {
 	return in(model, OpenAIDalleModels) && !strings.Contains(model, "gpt-4-dalle")
 }
 
+func IsOpenAIGPTImageModel(model string) bool {
+	model = strings.ToLower(strings.TrimSpace(model))
+	return strings.HasPrefix(model, "gpt-image-") || model == ChatGPTImageLatest || IsGrokImagineModel(model)
+}
+
+func IsGrokImagineModel(model string) bool {
+	model = strings.ToLower(strings.TrimSpace(model))
+	return strings.Contains(model, "grok-imagine-image")
+}
+
+func IsImageGenerationModel(model string) bool {
+	model = strings.ToLower(strings.TrimSpace(model))
+	for _, item := range ImageGenerationModels {
+		if model == strings.ToLower(strings.TrimSpace(item)) {
+			return true
+		}
+	}
+	return false
+}
+
+func IsOpenAIImageGenerationModel(models ...string) bool {
+	for _, model := range models {
+		model = strings.ToLower(strings.TrimSpace(model))
+		if model == "" || strings.Contains(model, "gpt-4-dalle") {
+			continue
+		}
+		if IsOpenAIDalleModel(model) || IsImageGenerationModel(model) {
+			return true
+		}
+	}
+	return false
+}
+
+func IsClaudeModel(models ...string) bool {
+	for _, model := range models {
+		model = strings.ToLower(strings.TrimSpace(model))
+		if strings.HasPrefix(model, "claude") || strings.Contains(model, "anthropic/claude") {
+			return true
+		}
+	}
+	return false
+}
+
 func IsGoogleImagenModel(model string) bool {
+	model = strings.ToLower(strings.TrimSpace(model))
 	// using image generation api if model is in imagen models
-	return in(model, GoogleImagenModels)
+	return in(model, GoogleImagenModels) || IsGeminiImageModel(model)
+}
+
+func IsGeminiImageModel(model string) bool {
+	model = strings.ToLower(strings.TrimSpace(model))
+	return strings.Contains(model, "gemini") && strings.Contains(model, "image")
 }
 
 func IsVisionModel(model string) bool {
-	return in(model, VisionModels) && !in(model, VisionSkipModels)
+	model = strings.ToLower(strings.TrimSpace(model))
+	if in(model, VisionSkipModels) {
+		return false
+	}
+	if in(model, VisionModels) {
+		return true
+	}
+
+	for _, prefix := range []string{
+		"gpt-5",
+		"gpt-4.1",
+		"o3",
+		"o4",
+		"gemini-2.",
+		"claude-4",
+		"claude-sonnet-4",
+		"claude-opus-4",
+	} {
+		if strings.HasPrefix(model, prefix) {
+			return true
+		}
+	}
+
+	return false
 }

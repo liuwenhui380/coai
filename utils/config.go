@@ -17,7 +17,6 @@ var configExampleFile = "config.example.yaml"
 var redirectRoutes = []string{
 	"/v1",
 	"/mj",
-	"/attachments",
 }
 
 func ReadConf() {
@@ -155,7 +154,23 @@ func RegisterStaticRoute(engine *gin.Engine) {
 		c.File("./app/dist/site.cache.webmanifest")
 	})
 
-	engine.Use(static.Serve("/", static.LocalFile("./app/dist", true)))
+	serveAttachment := func(c *gin.Context) {
+		c.Header("Cache-Control", "no-store")
+		c.File(fmt.Sprintf("storage/attachments/%s", c.Param("hash")))
+	}
+	engine.GET("/attachments/:hash", serveAttachment)
+	engine.HEAD("/attachments/:hash", serveAttachment)
+
+	staticHandler := static.Serve("/", static.LocalFile("./app/dist", true))
+	engine.Use(func(c *gin.Context) {
+		if strings.HasPrefix(c.Request.URL.Path, "/api/") ||
+			strings.HasPrefix(c.Request.URL.Path, "/attachments/") {
+			c.Next()
+			return
+		}
+
+		staticHandler(c)
+	})
 	engine.NoRoute(func(c *gin.Context) {
 		c.File("./app/dist/index.cache.html")
 	})

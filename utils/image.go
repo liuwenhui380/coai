@@ -2,6 +2,7 @@ package utils
 
 import (
 	"chat/globals"
+	"encoding/base64"
 	"fmt"
 	"image"
 	"image/gif"
@@ -14,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/chai2010/webp"
+	"github.com/spf13/viper"
 )
 
 type Image struct {
@@ -196,8 +198,9 @@ func (i *Image) ToRawBase64() string {
 	return data
 }
 
-func DownloadImage(url string, path string) error {
-	res, err := http.Get(url)
+func DownloadImage(uri string, filePath string, config ...globals.ProxyConfig) error {
+	client := newClient(config)
+	res, err := client.Get(uri)
 	if err != nil {
 		return err
 	}
@@ -205,11 +208,15 @@ func DownloadImage(url string, path string) error {
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			globals.Debug("[utils] close file error: %s (path: %s)", err.Error(), path)
+			globals.Debug(fmt.Sprintf("[utils] close file error: %s (path: %s)", err.Error(), filePath))
 		}
 	}(res.Body)
 
-	file, err := os.Create(path)
+	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusMultipleChoices {
+		return fmt.Errorf("download image failed with status code: %d", res.StatusCode)
+	}
+
+	file, err := os.Create(filePath)
 	if err != nil {
 		return err
 	}
@@ -217,7 +224,7 @@ func DownloadImage(url string, path string) error {
 	defer func(file *os.File) {
 		err := file.Close()
 		if err != nil {
-			globals.Debug("[utils] close file error: %s (path: %s)", err.Error(), path)
+			globals.Debug(fmt.Sprintf("[utils] close file error: %s (path: %s)", err.Error(), filePath))
 		}
 	}(file)
 
@@ -226,16 +233,170 @@ func DownloadImage(url string, path string) error {
 }
 
 func StoreImage(url string) string {
-	if globals.AcceptImageStore {
-		hash := Md5Encrypt(url) + path.Ext(url)
+	return StoreImageWithProxy(url)
+}
 
-		if err := DownloadImage(url, fmt.Sprintf("storage/attachments/%s", hash)); err != nil {
-			globals.Warn(fmt.Sprintf("[utils] save image error: %s", err.Error()))
-			return url
-		}
-
-		return fmt.Sprintf("%s/attachments/%s", globals.NotifyUrl, hash)
+func StoreImagesInMarkdown(content string, config ...globals.ProxyConfig) string {
+	if !globals.AcceptImageStore || content == "" {
+		return content
 	}
 
-	return url
+	_, images := ExtractImages(content, true)
+	for _, image := range images {
+		stored := StoreImageWithProxy(image, config...)
+		if stored != "" && stored != image {
+			content = strings.ReplaceAll(content, image, stored)
+		}
+	}
+
+	return content
+}
+
+func StoreImageWithProxy(uri string, config ...globals.ProxyConfig) string {
+	if globals.AcceptImageStore {
+		if strings.HasPrefix(uri, "data:image/") {
+			return StoreBase64Image(uri)
+		}
+
+		hash := Md5Encrypt(uri) + imageExtensionFromURL(uri)
+		filePath := fmt.Sprintf("storage/attachments/%s", hash)
+
+		if err := ensureAttachmentDir(); err != nil {
+			globals.Warn(fmt.Sprintf("[utils] create image storage dir error: %s", err.Error()))
+			return uri
+		}
+
+		if err := DownloadImage(uri, filePath, imageDownloadProxyConfig(config)...); err != nil {
+			globals.Warn(fmt.Sprintf("[utils] save image error: %s", err.Error()))
+			return uri
+		}
+
+		return attachmentURL(hash)
+	}
+
+	return uri
+}
+
+func StoreBase64Image(dataURL string) string {
+	if !globals.AcceptImageStore {
+		return dataURL
+	}
+
+	header, payload := splitDataImageURI(dataURL)
+	if payload == "" {
+		globals.Warn("[utils] save base64 image error: invalid data url")
+		return dataURL
+	}
+
+	data, err := decodeImageBase64(payload)
+	if err != nil {
+		globals.Warn(fmt.Sprintf("[utils] save base64 image error: %s", err.Error()))
+		return dataURL
+	}
+
+	hash := Md5Encrypt(dataURL) + imageExtensionFromDataURL(header)
+	filePath := fmt.Sprintf("storage/attachments/%s", hash)
+
+	if err = ensureAttachmentDir(); err != nil {
+		globals.Warn(fmt.Sprintf("[utils] create image storage dir error: %s", err.Error()))
+		return dataURL
+	}
+
+	if err = os.WriteFile(filePath, data, 0644); err != nil {
+		globals.Warn(fmt.Sprintf("[utils] save base64 image error: %s", err.Error()))
+		return dataURL
+	}
+
+	return attachmentURL(hash)
+}
+
+func ensureAttachmentDir() error {
+	return os.MkdirAll("storage/attachments", 0755)
+}
+
+func attachmentURL(hash string) string {
+	prefix := "/attachments"
+	if viper.GetBool("serve_static") {
+		prefix = "/api/attachments"
+	}
+
+	return fmt.Sprintf("%s%s/%s", strings.TrimRight(globals.NotifyUrl, "/"), prefix, hash)
+}
+
+func imageDownloadProxyConfig(config []globals.ProxyConfig) []globals.ProxyConfig {
+	if len(config) > 0 && config[0].ProxyType != globals.NoneProxyType && strings.TrimSpace(config[0].Proxy) != "" {
+		return config
+	}
+
+	proxyURL := strings.TrimSpace(globals.ImageDownloadProxy)
+	if !globals.ImageDownloadProxyEnabled || proxyURL == "" {
+		return config
+	}
+
+	proxyType := globals.HttpProxyType
+	if strings.HasPrefix(strings.ToLower(proxyURL), "socks5://") {
+		proxyType = globals.Socks5ProxyType
+	}
+
+	return []globals.ProxyConfig{{
+		ProxyType: proxyType,
+		Proxy:     proxyURL,
+	}}
+}
+
+func imageExtensionFromURL(uri string) string {
+	if ext := strings.ToLower(path.Ext(strings.Split(uri, "?")[0])); ext != "" {
+		return ext
+	}
+	return ".png"
+}
+
+func imageExtensionFromDataURL(header string) string {
+	mimeType := strings.TrimPrefix(strings.Split(header, ";")[0], "data:")
+	switch strings.ToLower(mimeType) {
+	case "image/jpeg", "image/jpg":
+		return ".jpg"
+	case "image/gif":
+		return ".gif"
+	case "image/webp":
+		return ".webp"
+	case "image/bmp":
+		return ".bmp"
+	default:
+		return ".png"
+	}
+}
+
+func splitDataImageURI(dataURL string) (string, string) {
+	parts := SafeSplit(strings.TrimSpace(dataURL), ",", 2)
+	if len(parts) < 2 || parts[1] == "" {
+		return dataURL, ""
+	}
+
+	return parts[0], strings.TrimSpace(parts[1])
+}
+
+func decodeImageBase64(payload string) ([]byte, error) {
+	payload = strings.Map(func(r rune) rune {
+		switch r {
+		case '\n', '\r', '\t', ' ':
+			return -1
+		default:
+			return r
+		}
+	}, payload)
+
+	encodings := []*base64.Encoding{
+		base64.StdEncoding,
+		base64.RawStdEncoding,
+		base64.URLEncoding,
+		base64.RawURLEncoding,
+	}
+	for _, encoding := range encodings {
+		if data, err := encoding.DecodeString(payload); err == nil {
+			return data, nil
+		}
+	}
+
+	return base64.StdEncoding.DecodeString(payload)
 }

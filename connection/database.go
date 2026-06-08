@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/go-sql-driver/mysql"
 	_ "github.com/go-sql-driver/mysql"
@@ -91,6 +92,7 @@ func ConnectDatabase() *sql.DB {
 	CreateInvitationTable(db)
 	CreateRedeemTable(db)
 	CreateBroadcastTable(db)
+	CreateModelCallRecordTable(db)
 
 	if err := doMigration(db); err != nil {
 		fmt.Println(fmt.Sprintf("migration error: %s", err))
@@ -335,4 +337,45 @@ func CreateBroadcastTable(db *sql.DB) {
 	if err != nil {
 		fmt.Println(err)
 	}
+}
+
+func CreateModelCallRecordTable(db *sql.DB) {
+	_, err := globals.ExecDb(db, `
+		CREATE TABLE IF NOT EXISTS model_call_record (
+		  id INT PRIMARY KEY AUTO_INCREMENT,
+		  user_id INT,
+		  username VARCHAR(255),
+		  model VARCHAR(255) NOT NULL,
+		  input_tokens INT DEFAULT 0,
+		  output_tokens INT DEFAULT 0,
+		  total_tokens INT DEFAULT 0,
+		  input_quota DECIMAL(24, 6) DEFAULT 0,
+		  output_quota DECIMAL(24, 6) DEFAULT 0,
+		  quota DECIMAL(24, 6) DEFAULT 0,
+		  input MEDIUMTEXT,
+		  output MEDIUMTEXT,
+		  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		  FOREIGN KEY (user_id) REFERENCES auth(id)
+		);
+	`)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	addModelCallRecordColumn(db, "ALTER TABLE model_call_record ADD COLUMN input_quota DECIMAL(24, 6)")
+	addModelCallRecordColumn(db, "ALTER TABLE model_call_record ADD COLUMN output_quota DECIMAL(24, 6)")
+}
+
+func addModelCallRecordColumn(db *sql.DB, statement string) {
+	_, err := globals.ExecDb(db, statement)
+	if err == nil {
+		return
+	}
+
+	msg := strings.ToLower(err.Error())
+	if strings.Contains(msg, "duplicate column") || strings.Contains(msg, "duplicate column name") {
+		return
+	}
+
+	fmt.Println(err)
 }

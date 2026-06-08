@@ -7,6 +7,7 @@ import (
 	"chat/channel"
 	"chat/globals"
 	"chat/utils"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strings"
@@ -63,11 +64,14 @@ func ImagesRelayAPI(c *gin.Context) {
 	createRelayImageObject(c, form, prompt, created, user, supportRelayPlan())
 }
 
-func getImageProps(form RelayImageForm, messages []globals.Message, buffer *utils.Buffer) *adaptercommon.ChatProps {
+func getImageProps(form RelayImageForm, messages []globals.Message, buffer *utils.Buffer, db *sql.DB, user *auth.User) *adaptercommon.ChatProps {
+	upstreamUser, metadata := chatnioUpstreamIdentity(db, user)
 	return adaptercommon.CreateChatProps(&adaptercommon.ChatProps{
 		Model:     form.Model,
 		Message:   messages,
 		MaxTokens: utils.ToPtr(-1),
+		User:      upstreamUser,
+		Metadata:  metadata,
 	}, buffer)
 }
 
@@ -99,7 +103,7 @@ func createRelayImageObject(c *gin.Context, form RelayImageForm, prompt string, 
 	}
 
 	buffer := utils.NewBuffer(form.Model, messages, channel.ChargeInstance.GetCharge(form.Model))
-	hit, err := channel.NewChatRequestWithCache(cache, buffer, auth.GetGroup(db, user), getImageProps(form, messages, buffer), func(data *globals.Chunk) error {
+	hit, err := channel.NewChatRequestWithCache(cache, buffer, auth.GetGroup(db, user), getImageProps(form, messages, buffer, db, user), func(data *globals.Chunk) error {
 		buffer.WriteChunk(data)
 		return nil
 	})

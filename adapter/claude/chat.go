@@ -137,14 +137,12 @@ func (c *ChatInstance) GetSystemPrompt(props *adaptercommon.ChatProps) (prompt s
 func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) *ChatBody {
 	messages := c.GetMessages(props)
 	return &ChatBody{
-		Messages:    messages,
-		MaxTokens:   c.GetTokens(props),
-		Model:       props.Model,
-		System:      c.GetSystemPrompt(props),
-		Stream:      stream,
-		Temperature: props.Temperature,
-		TopP:        props.TopP,
-		TopK:        props.TopK,
+		Messages:  messages,
+		MaxTokens: c.GetTokens(props),
+		Model:     props.Model,
+		System:    c.GetSystemPrompt(props),
+		Stream:    stream,
+		TopK:      props.TopK,
 	}
 }
 
