@@ -46,6 +46,11 @@ type BanForm struct {
 	Ban bool  `json:"ban"`
 }
 
+type MemberTypeForm struct {
+	Id         int64  `json:"id" binding:"required"`
+	MemberType string `json:"member_type" binding:"required"`
+}
+
 type QuotaOperationForm struct {
 	Id       int64    `json:"id" binding:"required"`
 	Quota    *float32 `json:"quota" binding:"required"`
@@ -318,6 +323,32 @@ func BanAPI(c *gin.Context) {
 	}
 
 	err := banUser(db, form.Id, form.Ban)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": true,
+	})
+}
+
+func MemberTypeAPI(c *gin.Context) {
+	db := utils.GetDBFromContext(c)
+
+	var form MemberTypeForm
+	if err := c.ShouldBindJSON(&form); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	err := memberTypeMigration(db, form.Id, form.MemberType)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  false,

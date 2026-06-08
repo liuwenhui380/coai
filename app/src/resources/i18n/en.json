@@ -1012,10 +1012,15 @@
       "standard_plan": "Standard Subscribers",
       "pro_plan": "Pro Subscribers"
     },
+    "member-type-options": {
+      "student": "Student",
+      "teacher": "Teacher"
+    },
     "user-type-chart-info": "Total {{total}} users",
     "user-type-chart-tip": "Other paying users: refers to users who subscribe to expired users or users whose points exceed the current initial points (operations such as using invitation codes will also be counted as changes in points increase)",
     "is-banned": "Ban",
     "email": "Email",
+    "member-type": "Member Type",
     "quota-set-action": "Point Settings",
     "quota-set-action-desc": "Set user's credits",
     "release-subscription-action": "Release subscription usage",
@@ -1026,6 +1031,8 @@
     "password-action-desc": "Please enter the user's new password",
     "email-action": "Modify email",
     "email-action-desc": "Please enter the user's new email",
+    "member-type-action": "Set member type",
+    "member-type-action-desc": "Set the user's member type for weekly ChatGPT Pro and DeepResearch limits",
     "default-password": "Password change prompt",
     "default-password-prompt": "Your administrator password is the default password. For the security of your account, please change your password as soon as possible. (Go to Back Office - System Settings - Change Root Password)",
     "set-admin-action": "Set as adminisitrator",

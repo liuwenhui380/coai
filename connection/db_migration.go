@@ -16,7 +16,10 @@ func validSqlError(err error) bool {
 	// Error 1060: Duplicate column name
 	// Error 1050: Table already exists
 
-	return !(strings.Contains(content, "Error 1060") || strings.Contains(content, "Error 1050"))
+	return !(strings.Contains(content, "Error 1060") ||
+		strings.Contains(content, "Error 1050") ||
+		strings.Contains(strings.ToLower(content), "duplicate column name") ||
+		strings.Contains(strings.ToLower(content), "already exists"))
 }
 
 func checkSqlError(_ sql.Result, err error) error {
@@ -57,11 +60,24 @@ func doMigration(db *sql.DB) error {
 		return err
 	}
 
+	if err := execSql(db, `
+		ALTER TABLE auth
+		ADD COLUMN member_type VARCHAR(32) NOT NULL DEFAULT 'student';
+	`); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func doSqliteMigration(db *sql.DB) error {
 	// v3.10 added sqlite support, no migration needed before this version
+	if err := execSql(db, `
+		ALTER TABLE auth
+		ADD COLUMN member_type VARCHAR(32) NOT NULL DEFAULT 'student';
+	`); err != nil {
+		return err
+	}
 
 	return nil
 }

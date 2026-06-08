@@ -1012,10 +1012,15 @@
       "standard_plan": "標準サブスクライバー",
       "pro_plan": "Pro Subscribers"
     },
+    "member-type-options": {
+      "student": "学生",
+      "teacher": "教師"
+    },
     "user-type-chart-info": "合計{{total}}ユーザー",
     "user-type-chart-tip": "他の有料ユーザー：有効期限切れのユーザーまたはポイントが現在の初期ポイントを超えるユーザーをサブスクライブするユーザーを指します（招待コードを使用するなどの操作もポイントの増加としてカウントされます）",
     "is-banned": "禁止",
     "email": "メール",
+    "member-type": "メンバー属性",
     "quota-set-action": "ポイント設定",
     "quota-set-action-desc": "ユーザーのクレジットを設定する",
     "release-subscription-action": "サブスクリプションの使用をリリースする",
@@ -1026,6 +1031,8 @@
     "password-action-desc": "ユーザーの新しいパスワードを入力してください",
     "email-action": "メールアドレスを変更する",
     "email-action-desc": "ユーザーの新しいメールアドレスを入力してください",
+    "member-type-action": "メンバー属性を設定",
+    "member-type-action-desc": "ChatGPT Pro と DeepResearch の週次上限に使うメンバー属性を設定します",
     "default-password": "パスワード変更プロンプト",
     "default-password-prompt": "管理者パスワードはデフォルトのパスワードです。アカウントのセキュリティのため、できるだけ早くパスワードを変更してください。（バックオフィスに移動-システム設定-ルートパスワードの変更）",
     "set-admin-action": "管理者にする",

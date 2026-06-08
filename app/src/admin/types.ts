@@ -101,6 +101,7 @@ export type UserData = {
   id: number;
   username: string;
   email: string;
+  member_type: "student" | "teacher";
   is_banned: boolean;
   is_admin: boolean;
   quota: number;

@@ -18,6 +18,7 @@ type User struct {
 	Level        int        `json:"level"`
 	Subscription *time.Time `json:"subscription"`
 	Banned       bool       `json:"is_banned"`
+	MemberType   string     `json:"member_type"`
 }
 
 type UserInfo struct {

@@ -10,6 +10,7 @@ import {
   banUserOperation,
   getUserList,
   initialUserFilter,
+  memberTypeOperation,
   quotaOperation,
   releaseUsageOperation,
   setAdminOperation,
@@ -44,6 +45,7 @@ import {
   CloudCog,
   CloudFog,
   Filter,
+  GraduationCap,
   KeyRound,
   Loader2,
   Mail,
@@ -54,6 +56,7 @@ import {
   Search,
   Shield,
   ShieldMinus,
+  UserRoundCheck,
 } from "lucide-react";
 import { Input } from "@/components/ui/input.tsx";
 import PopupDialog, { popupTypes } from "@/components/PopupDialog.tsx";
@@ -96,6 +99,8 @@ export const userTypeArray = [
   UserType.pro_plan,
 ];
 
+const memberTypeArray = ["student", "teacher"] as const;
+
 function doToast(t: any, resp: CommonResponse) {
   if (!resp.status)
     toast.error(t("admin.operate-failed"), {
@@ -124,6 +129,7 @@ function OperationMenu({ user, onRefresh }: OperationMenuProps) {
   const [releaseOpen, setReleaseOpen] = useState<boolean>(false);
   const [banOpen, setBanOpen] = useState<boolean>(false);
   const [adminOpen, setAdminOpen] = useState<boolean>(false);
+  const [memberTypeOpen, setMemberTypeOpen] = useState<boolean>(false);
 
   return (
     <>
@@ -301,6 +307,26 @@ function OperationMenu({ user, onRefresh }: OperationMenuProps) {
           return resp.status;
         }}
       />
+      <PopupDialog
+        type={popupTypes.List}
+        title={t("admin.member-type-action")}
+        name={t("admin.member-type")}
+        description={t("admin.member-type-action-desc")}
+        defaultValue={user.member_type || "student"}
+        params={{
+          dataList: [...memberTypeArray],
+          dataListTranslated: "admin.member-type-options",
+        }}
+        open={memberTypeOpen}
+        setOpen={setMemberTypeOpen}
+        onSubmit={async (value) => {
+          const resp = await memberTypeOperation(user.id, value);
+          doToast(t, resp);
+
+          if (resp.status) onRefresh?.();
+          return resp.status;
+        }}
+      />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -339,6 +365,10 @@ function OperationMenu({ user, onRefresh }: OperationMenuProps) {
               {t("admin.set-admin-action")}
             </DropdownMenuItem>
           )}
+          <DropdownMenuItem onClick={() => setMemberTypeOpen(true)}>
+            <GraduationCap className={`h-4 w-4 mr-2`} />
+            {t("admin.member-type-action")}
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setQuotaOpen(true)}>
             <CloudFog className={`h-4 w-4 mr-2`} />
             {t("admin.quota-action")}
@@ -523,6 +553,7 @@ function UserTable() {
                 <TableHead>ID</TableHead>
                 <TableHead>{t("admin.username")}</TableHead>
                 <TableHead>{t("admin.email")}</TableHead>
+                <TableHead>{t("admin.member-type")}</TableHead>
                 <TableHead>{t("admin.quota")}</TableHead>
                 <TableHead>{t("admin.used-quota")}</TableHead>
                 <TableHead>{t("admin.is-subscribed")}</TableHead>
@@ -543,6 +574,12 @@ function UserTable() {
                   </TableCell>
                   <TableCell className={`whitespace-nowrap`}>
                     {user.email || "-"}
+                  </TableCell>
+                  <TableCell className={`whitespace-nowrap`}>
+                    <Badge variant={`outline`}>
+                      <UserRoundCheck className={`h-3 w-3 mr-1`} />
+                      {t(`admin.member-type-options.${user.member_type || "student"}`)}
+                    </Badge>
                   </TableCell>
                   <TableCell>{user.quota}</TableCell>
                   <TableCell>{user.used_quota}</TableCell>

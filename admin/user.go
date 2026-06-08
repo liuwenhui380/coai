@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"chat/auth"
 	"chat/channel"
 	"chat/globals"
 	"chat/utils"
@@ -48,7 +49,7 @@ func getUsersForm(db *sql.DB, page int64, search string) PaginationForm {
 		    auth.id, auth.username, auth.email, auth.is_admin,
 		    quota.quota, quota.used,
 		    subscription.expired_at, subscription.total_month, subscription.enterprise, subscription.level,
-		    auth.is_banned
+		    auth.is_banned, auth.member_type
 		FROM auth
 		LEFT JOIN quota ON quota.user_id = auth.id
 		LEFT JOIN subscription ON subscription.user_id = auth.id
@@ -73,8 +74,9 @@ func getUsersForm(db *sql.DB, page int64, search string) PaginationForm {
 			isEnterprise      sql.NullBool
 			subscriptionLevel sql.NullInt64
 			isBanned          sql.NullBool
+			memberType        sql.NullString
 		)
-		if err := rows.Scan(&user.Id, &user.Username, &email, &user.IsAdmin, &quota, &usedQuota, &expired, &totalMonth, &isEnterprise, &subscriptionLevel, &isBanned); err != nil {
+		if err := rows.Scan(&user.Id, &user.Username, &email, &user.IsAdmin, &quota, &usedQuota, &expired, &totalMonth, &isEnterprise, &subscriptionLevel, &isBanned, &memberType); err != nil {
 			return PaginationForm{
 				Status:  false,
 				Message: err.Error(),
@@ -102,6 +104,7 @@ func getUsersForm(db *sql.DB, page int64, search string) PaginationForm {
 		}
 		user.Enterprise = isEnterprise.Valid && isEnterprise.Bool
 		user.IsBanned = isBanned.Valid && isBanned.Bool
+		user.MemberType = auth.NormalizeMemberType(memberType.String)
 
 		users = append(users, user)
 	}
@@ -169,6 +172,14 @@ func banUser(db *sql.DB, id int64, isBanned bool) error {
 	_, err := globals.ExecDb(db, `
 		UPDATE auth SET is_banned = ? WHERE id = ?
 	`, isBanned, id)
+
+	return err
+}
+
+func memberTypeMigration(db *sql.DB, id int64, memberType string) error {
+	_, err := globals.ExecDb(db, `
+		UPDATE auth SET member_type = ? WHERE id = ?
+	`, auth.NormalizeMemberType(memberType), id)
 
 	return err
 }

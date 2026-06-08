@@ -769,6 +769,7 @@
     "post-failed": "发布失败",
     "post-failed-prompt": "发布失败，原因：{{reason}}",
     "level": "用户等级",
+    "member-type": "成员属性",
     "is-admin": "管理员",
     "is-banned": "封禁",
     "used-quota": "已用点数",
@@ -791,6 +792,8 @@
     "unban-action-desc": "确定将该用户解封？",
     "email-action": "修改邮箱",
     "email-action-desc": "请输入用户的新邮箱",
+    "member-type-action": "设置成员属性",
+    "member-type-action-desc": "设置用户的成员属性，用于 ChatGPT Pro 和 DeepResearch 每周限额",
     "group": "分组",
     "group-setting": "分组设置",
     "custom-group": "自定义分组",
@@ -828,6 +831,10 @@
       "basic_plan": "基础版订阅用户",
       "standard_plan": "标准版订阅用户",
       "pro_plan": "专业版订阅用户"
+    },
+    "member-type-options": {
+      "student": "学生",
+      "teacher": "老师"
     },
     "delete-broadcast": "删除通知",
     "delete-broadcast-desc": "是否确定？此操作无法撤消。这将永久删除通知。",

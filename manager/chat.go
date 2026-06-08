@@ -29,11 +29,19 @@ func CollectQuota(c *gin.Context, user *auth.User, buffer *utils.Buffer, uncount
 	db := utils.GetDBFromContext(c)
 	quota := buffer.GetQuota()
 
-	if user == nil || quota <= 0 {
+	if user == nil {
 		return
 	}
 
 	if buffer.IsEmpty() || err != nil {
+		return
+	}
+
+	if !auth.IncrementMemberWeeklyUsage(db, user, buffer.GetModel()) {
+		globals.Warn(fmt.Sprintf("[member-weekly-usage] failed to increment usage (model: %s, user: %s)", buffer.GetModel(), user.Username))
+	}
+
+	if quota <= 0 {
 		return
 	}
 
@@ -202,7 +210,7 @@ func ChatHandler(conn *Connection, user *auth.User, instance *conversation.Conve
 	model := instance.GetModel()
 	segment := adapter.ClearMessages(model, web.ToChatSearched(instance, restart))
 
-	check, plan := auth.CanEnableModelWithSubscription(db, cache, user, model, segment)
+	check, plan := checkChatEnableState(db, cache, user, model, segment)
 	conn.Send(globals.ChatSegmentResponse{
 		Conversation: instance.GetId(),
 	})

@@ -80,6 +80,7 @@ func ConnectDatabase() *sql.DB {
 	db.SetMaxIdleConns(64)
 
 	CreateUserTable(db)
+	CreateMemberWeeklyUsageTable(db)
 	CreateConversationTable(db)
 	CreateMaskTable(db)
 	CreateSharingTable(db)
@@ -133,7 +134,8 @@ func CreateUserTable(db *sql.DB) {
 		  email VARCHAR(255) UNIQUE,
 		  password VARCHAR(64) NOT NULL,
 		  is_admin BOOLEAN DEFAULT FALSE,
-		  is_banned BOOLEAN DEFAULT FALSE
+		  is_banned BOOLEAN DEFAULT FALSE,
+		  member_type VARCHAR(32) NOT NULL DEFAULT 'student'
 		);
 	`)
 	if err != nil {
@@ -141,6 +143,25 @@ func CreateUserTable(db *sql.DB) {
 	}
 
 	InitRootUser(db)
+}
+
+func CreateMemberWeeklyUsageTable(db *sql.DB) {
+	_, err := globals.ExecDb(db, `
+		CREATE TABLE IF NOT EXISTS member_weekly_usage (
+		  id INT PRIMARY KEY AUTO_INCREMENT,
+		  user_id INT,
+		  model VARCHAR(255) NOT NULL,
+		  week_start VARCHAR(10) NOT NULL,
+		  used INT DEFAULT 0,
+		  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		  UNIQUE KEY (user_id, model, week_start),
+		  FOREIGN KEY (user_id) REFERENCES auth(id)
+		);
+	`)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func CreatePackageTable(db *sql.DB) {

@@ -569,6 +569,7 @@
     "post-failed": "發布失敗",
     "post-failed-prompt": "發布失敗，原因：{{reason}}",
     "level": "等級",
+    "member-type": "成員屬性",
     "is-admin": "管理員",
     "is-banned": "封鎖",
     "used-quota": "已用點數",
@@ -591,6 +592,8 @@
     "unban-action-desc": "確定要解除封鎖該使用者？",
     "email-action": "變更電子郵件",
     "email-action-desc": "請輸入使用者的新電子郵件",
+    "member-type-action": "設定成員屬性",
+    "member-type-action-desc": "設定使用者的成員屬性，用於 ChatGPT Pro 和 DeepResearch 每週限額",
     "quota-action": "點數變更",
     "quota-action-desc": "請輸入點數變更值（正數為增加，負數為減少）",
     "quota-set-action": "點數設定",
@@ -623,6 +626,10 @@
       "basic_plan": "基本版訂閱使用者",
       "standard_plan": "標準版訂閱使用者",
       "pro_plan": "專業版訂閱使用者"
+    },
+    "member-type-options": {
+      "student": "學生",
+      "teacher": "老師"
     },
     "market": {
       "title": "模型市場",

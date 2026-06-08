@@ -28,7 +28,11 @@ func supportRelayPlan() bool {
 	return channel.SystemInstance.SupportRelayPlan()
 }
 
-func checkEnableState(db *sql.DB, cache *redis.Client, user *auth.User, model string, messages []globals.Message) (state error, plan bool) {
+func checkChatEnableState(db *sql.DB, cache *redis.Client, user *auth.User, model string, messages []globals.Message) (state error, plan bool) {
+	if err := auth.CheckMemberWeeklyLimit(db, user, model); err != nil {
+		return err, false
+	}
+
 	if supportRelayPlan() {
 		return auth.CanEnableModelWithSubscription(db, cache, user, model, messages)
 	}
@@ -80,7 +84,7 @@ func ChatRelayAPI(c *gin.Context) {
 		form.Official = true
 	}
 
-	check, plan := checkEnableState(db, cache, user, form.Model, messages)
+	check, plan := checkChatEnableState(db, cache, user, form.Model, messages)
 	if check != nil {
 		sendErrorResponse(c, check, "quota_exceeded_error")
 		return
