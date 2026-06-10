@@ -52,6 +52,16 @@ function Announcement({
 
     return broadcast.message;
   }, [broadcast.message]);
+  const displayAnnouncement = useMemo(() => {
+    const segs = announcement.split("\n");
+
+    if (segs.length > 6) {
+      return segs.slice(0, 6).join("\n") + " ...";
+    }
+
+    return announcement;
+  }, [announcement]);
+  const displayMessage = displayBroadcastMessage || displayAnnouncement;
 
   const TriggerComp = children || (
     <div
@@ -62,7 +72,7 @@ function Announcement({
       )}
     >
       <Markdown acceptHtml={true} className="p-0 text-sm text-secondary">
-        {displayBroadcastMessage || t("no-announcement")}
+        {displayMessage || t("no-announcement")}
       </Markdown>
     </div>
   );

@@ -23,6 +23,8 @@ type ApiInfo struct {
 	Article      []string `json:"article"`
 	Generation   []string `json:"generation"`
 	RelayPlan    bool     `json:"relay_plan"`
+	Currency     string   `json:"currency"`
+	HideKeyDocs  bool     `json:"hide_key_docs"`
 }
 
 type generalState struct {
@@ -45,6 +47,8 @@ type siteState struct {
 	Contact       string  `json:"contact" mapstructure:"contact"`
 	Footer        string  `json:"footer" mapstructure:"footer"`
 	AuthFooter    bool    `json:"auth_footer" mapstructure:"authfooter"`
+	Currency      string  `json:"currency" mapstructure:"currency"`
+	HideKeyDocs   bool    `json:"hide_key_docs" mapstructure:"hidekeydocs"`
 }
 
 type whiteList struct {
@@ -155,6 +159,8 @@ func (c *SystemConfig) AsInfo() ApiInfo {
 		Article:      c.Common.Article,
 		Generation:   c.Common.Generation,
 		RelayPlan:    c.Site.RelayPlan,
+		Currency:     c.Site.Currency,
+		HideKeyDocs:  c.Site.HideKeyDocs,
 	}
 }
 

@@ -38,6 +38,7 @@ import {
   testWebSearching,
   updateRootPassword,
 } from "@/admin/api/system.ts";
+import { syncSiteInfo } from "@/admin/api/info.ts";
 import { useEffectAsync } from "@/utils/hook.ts";
 import { withNotify } from "@/api/common.ts";
 import { doVerify } from "@/api/auth.ts";
@@ -1083,6 +1084,7 @@ function System() {
     const res = await setConfig(data);
 
     if (doToast !== false) withNotify(t, res, true);
+    if (res.status) syncSiteInfo();
   };
 
   const doRefresh = async () => {

@@ -5,6 +5,7 @@ import (
 	"chat/globals"
 	"chat/utils"
 	"context"
+	"errors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,6 +15,42 @@ func createBroadcast(c *gin.Context, user *auth.User, content string) error {
 
 	if _, err := globals.ExecDb(db, `INSERT INTO broadcast (poster_id, content) VALUES (?, ?)`, user.GetID(db), content); err != nil {
 		return err
+	}
+
+	cache.Del(context.Background(), ":broadcast")
+
+	return nil
+}
+
+func removeBroadcast(c *gin.Context, index int) error {
+	db := utils.GetDBFromContext(c)
+	cache := utils.GetCacheFromContext(c)
+
+	result, err := globals.ExecDb(db, `DELETE FROM broadcast WHERE id = ?`, index)
+	if err != nil {
+		return err
+	}
+
+	if rows, err := result.RowsAffected(); err == nil && rows == 0 {
+		return errors.New("broadcast not found")
+	}
+
+	cache.Del(context.Background(), ":broadcast")
+
+	return nil
+}
+
+func updateBroadcast(c *gin.Context, index int, content string) error {
+	db := utils.GetDBFromContext(c)
+	cache := utils.GetCacheFromContext(c)
+
+	result, err := globals.ExecDb(db, `UPDATE broadcast SET content = ? WHERE id = ?`, content, index)
+	if err != nil {
+		return err
+	}
+
+	if rows, err := result.RowsAffected(); err == nil && rows == 0 {
+		return errors.New("broadcast not found")
 	}
 
 	cache.Del(context.Background(), ":broadcast")
@@ -34,6 +71,7 @@ func getBroadcastList(c *gin.Context) ([]Info, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var broadcast Info
@@ -43,6 +81,10 @@ func getBroadcastList(c *gin.Context) ([]Info, error) {
 		}
 		broadcast.CreatedAt = utils.ConvertTime(createdAt).Format("2006-01-02 15:04:05")
 		broadcastList = append(broadcastList, broadcast)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return broadcastList, nil

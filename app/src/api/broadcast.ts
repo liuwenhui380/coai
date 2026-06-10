@@ -20,6 +20,17 @@ export type CommonBroadcastResponse = {
   error: string;
 };
 
+function getRequestError(e: unknown): string {
+  if (axios.isAxiosError(e)) {
+    const data = e.response?.data as
+      | { error?: string; reason?: string; message?: string }
+      | undefined;
+    return data?.error || data?.reason || data?.message || e.message;
+  }
+
+  return e instanceof Error ? e.message : "error occurred";
+}
+
 export async function getRawBroadcast(): Promise<Broadcast> {
   try {
     const data = await axios.get("/broadcast/view");
@@ -88,7 +99,7 @@ export async function createBroadcast(
     console.warn(e);
     return {
       status: false,
-      error: (e as Error).message,
+      error: getRequestError(e),
     };
   }
 }
@@ -103,7 +114,7 @@ export async function removeBroadcast(
     console.warn(e);
     return {
       status: false,
-      error: (e as Error).message,
+      error: getRequestError(e),
     };
   }
 }
@@ -119,7 +130,7 @@ export async function updateBroadcast(
     console.warn(e);
     return {
       status: false,
-      error: (e as Error).message,
+      error: getRequestError(e),
     };
   }
 }
