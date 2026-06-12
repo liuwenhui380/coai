@@ -1,12 +1,14 @@
 package utils
 
 import (
+	"bytes"
 	"chat/globals"
 	"encoding/base64"
 	"fmt"
 	"image"
 	"image/gif"
 	"image/jpeg"
+	_ "image/png"
 	"io"
 	"math"
 	"net/http"
@@ -31,12 +33,12 @@ func NewImage(url string) (*Image, error) {
 			return nil, nil
 		}
 
-		decoded, err := Base64Decode(data[1])
+		decoded, err := decodeImageBase64(data[1])
 		if err != nil {
 			return nil, err
 		}
 
-		img, _, err := image.Decode(strings.NewReader(string(decoded)))
+		img, _, err := image.Decode(bytes.NewReader(decoded))
 		if err != nil {
 			return nil, err
 		}
@@ -62,11 +64,11 @@ func NewImage(url string) (*Image, error) {
 		if img, err = jpeg.Decode(res.Body); err != nil {
 			return nil, err
 		}
-	case "webp":
+	case ".webp":
 		if img, err = webp.Decode(res.Body); err != nil {
 			return nil, err
 		}
-	case "gif":
+	case ".gif":
 		ticks, err := gif.DecodeAll(res.Body)
 		if err != nil {
 			return nil, err

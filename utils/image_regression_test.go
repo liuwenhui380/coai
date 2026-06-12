@@ -1,27 +1,17 @@
 package utils
 
 import (
-	"bytes"
 	"fmt"
-	"image"
-	"image/color"
-	"image/png"
 	"strings"
 	"testing"
 )
 
+const validPNGBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+
 func mustPNGDataURL(t *testing.T) string {
 	t.Helper()
 
-	img := image.NewNRGBA(image.Rect(0, 0, 1, 1))
-	img.Set(0, 0, color.NRGBA{R: 0x12, G: 0x34, B: 0x56, A: 0xff})
-
-	var buf bytes.Buffer
-	if err := png.Encode(&buf, img); err != nil {
-		t.Fatalf("encode png: %v", err)
-	}
-
-	return fmt.Sprintf("data:image/png;base64,%s", Base64EncodeBytes(buf.Bytes()))
+	return fmt.Sprintf("data:image/png;base64,%s", validPNGBase64)
 }
 
 func TestNewImageDecodesPNGDataURL(t *testing.T) {
