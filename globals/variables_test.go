@@ -27,6 +27,10 @@ func TestIsOpenAIImageGenerationModelRecognizesGPTImage2(t *testing.T) {
 		t.Fatal("Grok Imagine Image should use the OpenAI Images API")
 	}
 
+	if !IsOpenAIImageGenerationModel("x-ai/grok-image") {
+		t.Fatal("Grok Image should use the OpenAI Images API")
+	}
+
 	if IsOpenAIImageGenerationModel(GPT4Dalle) {
 		t.Fatal("gpt-4-dalle should keep the legacy chat-compatible path")
 	}

@@ -29,8 +29,34 @@ func TestCountInputTokensFromRecordedPromptsUsesFixedImageEstimate(t *testing.T)
 		t.Fatalf("count without image: %v", err)
 	}
 
-	if delta := withTokens - withoutTokens; delta != 3000 {
-		t.Fatalf("image token delta = %d, want 3000", delta)
+	if delta := withTokens - withoutTokens; delta != 1000 {
+		t.Fatalf("image token delta = %d, want 1000", delta)
+	}
+}
+
+func TestCountInputTokensFromRecordedPromptsEstimatesGrokImageInput(t *testing.T) {
+	image := "data:image/png;base64," + strings.Repeat("A", 4096)
+	withImage := mustPromptJSON(t, "x-ai/grok-image", []globals.Message{{
+		Role:    globals.User,
+		Content: "edit this image " + image,
+	}})
+	withoutImage := mustPromptJSON(t, "x-ai/grok-image", []globals.Message{{
+		Role:    globals.User,
+		Content: "edit this image ",
+	}})
+
+	withTokens, err := countInputTokensFromRecordedPrompts("x-ai/grok-image", withImage)
+	if err != nil {
+		t.Fatalf("count with image: %v", err)
+	}
+
+	withoutTokens, err := countInputTokensFromRecordedPrompts("x-ai/grok-image", withoutImage)
+	if err != nil {
+		t.Fatalf("count without image: %v", err)
+	}
+
+	if delta := withTokens - withoutTokens; delta != 1000 {
+		t.Fatalf("grok image token delta = %d, want 1000", delta)
 	}
 }
 

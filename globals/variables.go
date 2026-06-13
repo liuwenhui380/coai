@@ -194,7 +194,7 @@ func IsOpenAIGPTImageModel(model string) bool {
 
 func IsGrokImagineModel(model string) bool {
 	model = strings.ToLower(strings.TrimSpace(model))
-	return strings.Contains(model, "grok-imagine-image")
+	return strings.Contains(model, "grok-imagine-image") || strings.Contains(model, "grok-image")
 }
 
 func IsImageGenerationModel(model string) bool {
@@ -213,7 +213,7 @@ func IsOpenAIImageGenerationModel(models ...string) bool {
 		if model == "" || strings.Contains(model, "gpt-4-dalle") {
 			continue
 		}
-		if IsOpenAIDalleModel(model) || IsImageGenerationModel(model) {
+		if IsOpenAIDalleModel(model) || IsOpenAIGPTImageModel(model) || IsImageGenerationModel(model) {
 			return true
 		}
 	}
@@ -234,6 +234,10 @@ func IsGoogleImagenModel(model string) bool {
 	model = strings.ToLower(strings.TrimSpace(model))
 	// using image generation api if model is in imagen models
 	return in(model, GoogleImagenModels) || IsGeminiImageModel(model)
+}
+
+func IsImageInputModel(model string) bool {
+	return IsVisionModel(model) || IsOpenAIImageGenerationModel(model) || IsGoogleImagenModel(model)
 }
 
 func IsGeminiImageModel(model string) bool {

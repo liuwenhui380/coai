@@ -38,17 +38,15 @@ type Buffer struct {
 }
 
 func initInputToken(model string, history []globals.Message) int {
-	if globals.IsVisionModel(model) {
-		for _, message := range history {
-			if message.Role == globals.User {
-				content, _ := ExtractImages(message.Content, true)
-				message.Content = content
-			}
-		}
-
+	imageTokens := 0
+	if globals.IsImageInputModel(model) {
+		estimateImageTokens := !globals.IsVisionModel(model)
 		history = Each(history, func(message globals.Message) globals.Message {
 			if message.Role == globals.User {
-				raw, _ := ExtractImages(message.Content, true)
+				raw, images := ExtractImages(message.Content, true)
+				if estimateImageTokens {
+					imageTokens += len(images) * base64ImageTokenEstimate
+				}
 				return globals.Message{
 					Role:         message.Role,
 					Content:      raw,
@@ -63,7 +61,7 @@ func initInputToken(model string, history []globals.Message) int {
 		})
 	}
 
-	return NumTokensFromMessages(history, model, false)
+	return NumTokensFromMessages(history, model, false) + imageTokens
 }
 
 func NewBuffer(model string, history []globals.Message, charge Charge) *Buffer {

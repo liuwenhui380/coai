@@ -133,12 +133,12 @@ func (m *Manager) IsVisionModel(model string) bool {
 }
 
 func (m *Manager) IsImageInputModel(model string) bool {
-	if m.IsVisionModel(model) || globals.IsOpenAIImageGenerationModel(model) {
+	if globals.IsImageInputModel(model) {
 		return true
 	}
 
 	for _, channel := range m.HitSequence(model) {
-		if channel != nil && globals.IsOpenAIImageGenerationModel(channel.GetModelReflect(model)) {
+		if channel != nil && globals.IsImageInputModel(channel.GetModelReflect(model)) {
 			return true
 		}
 	}
