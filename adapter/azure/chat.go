@@ -43,23 +43,12 @@ func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) 
 		}
 	}
 
-	temperature := props.Temperature
-	topP := props.TopP
-	if globals.IsClaudeModel(props.OriginalModel, props.Model) {
-		temperature = nil
-		topP = nil
-	}
-
 	return ChatRequest{
-		Messages:         formatMessages(props),
-		MaxToken:         props.MaxTokens,
-		Stream:           stream,
-		PresencePenalty:  props.PresencePenalty,
-		FrequencyPenalty: props.FrequencyPenalty,
-		Temperature:      temperature,
-		TopP:             topP,
-		Tools:            props.Tools,
-		ToolChoice:       props.ToolChoice,
+		Messages:   formatMessages(props),
+		MaxToken:   props.MaxTokens,
+		Stream:     stream,
+		Tools:      props.Tools,
+		ToolChoice: props.ToolChoice,
 	}
 }
 

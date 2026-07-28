@@ -142,7 +142,6 @@ func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) 
 		Model:     props.Model,
 		System:    c.GetSystemPrompt(props),
 		Stream:    stream,
-		TopK:      props.TopK,
 	}
 }
 

@@ -44,16 +44,6 @@ func isChatGPTWebModel(models ...string) bool {
 	return false
 }
 
-func isKimiCodingModel(models ...string) bool {
-	for _, model := range models {
-		switch strings.ToLower(strings.TrimSpace(model)) {
-		case "k3-256k", "kimi-for-coding":
-			return true
-		}
-	}
-	return false
-}
-
 func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) interface{} {
 	if props.Model == globals.GPT3TurboInstruct {
 		// for completions
@@ -70,42 +60,12 @@ func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) 
 	// o1, o3, gpt-5 compatibility
 	isNewModel := len(props.Model) >= 2 && (props.Model[:2] == "o1" || props.Model[:2] == "o3") || strings.HasPrefix(props.Model, "gpt-5")
 
-	isClaudeCompatible := globals.IsClaudeModel(props.OriginalModel, props.Model)
-	isKimiCodingCompatible := isKimiCodingModel(props.OriginalModel, props.Model)
-
-	var temperature *float32
-	if isClaudeCompatible || isKimiCodingCompatible {
-		temperature = nil
-	} else if isNewModel {
-		temp := float32(1.0)
-		temperature = &temp
-	} else {
-		temperature = props.Temperature
-	}
-
-	topP := props.TopP
-	if isClaudeCompatible || isKimiCodingCompatible {
-		topP = nil
-	}
-
-	presencePenalty := props.PresencePenalty
-	frequencyPenalty := props.FrequencyPenalty
-	// Kimi Coding/K3 使用上游固定采样配置，显式传入控制参数会被严格校验拒绝。
-	if isKimiCodingCompatible {
-		presencePenalty = nil
-		frequencyPenalty = nil
-	}
-
 	request := ChatRequest{
-		Model:            props.Model,
-		Messages:         messages,
-		Stream:           stream,
-		PresencePenalty:  presencePenalty,
-		FrequencyPenalty: frequencyPenalty,
-		Temperature:      temperature,
-		TopP:             topP,
-		Tools:            props.Tools,
-		ToolChoice:       props.ToolChoice,
+		Model:      props.Model,
+		Messages:   messages,
+		Stream:     stream,
+		Tools:      props.Tools,
+		ToolChoice: props.ToolChoice,
 	}
 
 	// ChatNio 身份字段只供 ChatGPT-Mirror 做会话隔离，不能泄漏给严格校验请求体的兼容上游。

@@ -35,14 +35,8 @@ import { ConnectionStack, StreamMessage } from "@/api/connection.ts";
 import { useTranslation } from "react-i18next";
 import {
   contextSelector,
-  frequencyPenaltySelector,
   historySelector,
   maxTokensSelector,
-  presencePenaltySelector,
-  repetitionPenaltySelector,
-  temperatureSelector,
-  topKSelector,
-  topPSelector,
 } from "@/store/settings.ts";
 
 export type ConversationSerialized = {
@@ -481,12 +475,6 @@ export function useMessageActions() {
   const history = useSelector(historySelector);
   const context = useSelector(contextSelector);
   const max_tokens = useSelector(maxTokensSelector);
-  const temperature = useSelector(temperatureSelector);
-  const top_p = useSelector(topPSelector);
-  const top_k = useSelector(topKSelector);
-  const presence_penalty = useSelector(presencePenaltySelector);
-  const frequency_penalty = useSelector(frequencyPenaltySelector);
-  const repetition_penalty = useSelector(repetitionPenaltySelector);
 
   return {
     send: async (message: string, using_model?: string) => {
@@ -512,12 +500,6 @@ export function useMessageActions() {
         context: history,
         ignore_context: !context,
         max_tokens,
-        temperature,
-        top_p,
-        top_k,
-        presence_penalty,
-        frequency_penalty,
-        repetition_penalty,
       });
       if (!state) return false;
 
@@ -543,12 +525,6 @@ export function useMessageActions() {
         context: history,
         ignore_context: !context,
         max_tokens,
-        temperature,
-        top_p,
-        top_k,
-        presence_penalty,
-        frequency_penalty,
-        repetition_penalty,
         message: "",
       });
 

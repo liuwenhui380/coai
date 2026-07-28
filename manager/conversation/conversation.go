@@ -25,13 +25,7 @@ type Conversation struct {
 	Shared    bool              `json:"shared"`
 	Context   int               `json:"context"`
 
-	MaxTokens         *int     `json:"max_tokens,omitempty"`
-	Temperature       *float32 `json:"temperature,omitempty"`
-	TopP              *float32 `json:"top_p,omitempty"`
-	TopK              *int     `json:"top_k,omitempty"`
-	PresencePenalty   *float32 `json:"presence_penalty,omitempty"`
-	FrequencyPenalty  *float32 `json:"frequency_penalty,omitempty"`
-	RepetitionPenalty *float32 `json:"repetition_penalty,omitempty"`
+	MaxTokens *int `json:"max_tokens,omitempty"`
 }
 
 type FormMessage struct {
@@ -43,13 +37,7 @@ type FormMessage struct {
 	Context       int    `json:"context"`
 
 	// request params
-	MaxTokens         *int     `json:"max_tokens,omitempty"`
-	Temperature       *float32 `json:"temperature,omitempty"`
-	TopP              *float32 `json:"top_p,omitempty"`
-	TopK              *int     `json:"top_k,omitempty"`
-	PresencePenalty   *float32 `json:"presence_penalty,omitempty"`
-	FrequencyPenalty  *float32 `json:"frequency_penalty,omitempty"`
-	RepetitionPenalty *float32 `json:"repetition_penalty,omitempty"`
+	MaxTokens *int `json:"max_tokens,omitempty"`
 }
 
 func NewAnonymousConversation() *Conversation {
@@ -127,54 +115,6 @@ func (c *Conversation) SetModel(model string) {
 
 func (c *Conversation) SetEnableWeb(enable bool) {
 	c.EnableWeb = enable
-}
-
-func (c *Conversation) GetTemperature() *float32 {
-	return c.Temperature
-}
-
-func (c *Conversation) SetTemperature(temperature *float32) {
-	c.Temperature = temperature
-}
-
-func (c *Conversation) GetTopP() *float32 {
-	return c.TopP
-}
-
-func (c *Conversation) SetTopP(topP *float32) {
-	c.TopP = topP
-}
-
-func (c *Conversation) GetTopK() *int {
-	return c.TopK
-}
-
-func (c *Conversation) SetTopK(topK *int) {
-	c.TopK = topK
-}
-
-func (c *Conversation) GetPresencePenalty() *float32 {
-	return c.PresencePenalty
-}
-
-func (c *Conversation) SetPresencePenalty(presencePenalty *float32) {
-	c.PresencePenalty = presencePenalty
-}
-
-func (c *Conversation) GetFrequencyPenalty() *float32 {
-	return c.FrequencyPenalty
-}
-
-func (c *Conversation) SetFrequencyPenalty(frequencyPenalty *float32) {
-	c.FrequencyPenalty = frequencyPenalty
-}
-
-func (c *Conversation) GetRepetitionPenalty() *float32 {
-	return c.RepetitionPenalty
-}
-
-func (c *Conversation) SetRepetitionPenalty(repetitionPenalty *float32) {
-	c.RepetitionPenalty = repetitionPenalty
 }
 
 func (c *Conversation) GetMaxTokens() *int {
@@ -330,12 +270,6 @@ func (c *Conversation) ApplyParam(form *FormMessage) {
 	c.SetContextLength(form.Context, form.IgnoreContext)
 
 	c.SetMaxTokens(form.MaxTokens)
-	c.SetTemperature(form.Temperature)
-	c.SetTopP(form.TopP)
-	c.SetTopK(form.TopK)
-	c.SetPresencePenalty(form.PresencePenalty)
-	c.SetFrequencyPenalty(form.FrequencyPenalty)
-	c.SetRepetitionPenalty(form.RepetitionPenalty)
 }
 
 func (c *Conversation) AddMessageFromByte(data []byte) (string, error) {

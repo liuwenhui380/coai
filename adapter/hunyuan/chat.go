@@ -33,7 +33,7 @@ func (c *ChatInstance) FormatMessages(messages []globals.Message) []globals.Mess
 func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, callback globals.Hook) error {
 	credential := NewCredential(c.GetSecretId(), c.GetSecretKey())
 	client := NewInstance(c.GetAppId(), c.GetEndpoint(), credential)
-	channel, err := client.Chat(context.Background(), NewRequest(Stream, c.FormatMessages(props.Message), props.Temperature, props.TopP))
+	channel, err := client.Chat(context.Background(), NewRequest(Stream, c.FormatMessages(props.Message)))
 	if err != nil {
 		return fmt.Errorf("tencent hunyuan error: %+v", err)
 	}

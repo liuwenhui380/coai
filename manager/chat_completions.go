@@ -102,19 +102,13 @@ func ChatRelayAPI(c *gin.Context) {
 func getChatProps(form RelayForm, messages []globals.Message, buffer *utils.Buffer, db *sql.DB, user *auth.User) *adaptercommon.ChatProps {
 	upstreamUser, metadata := chatnioUpstreamIdentity(db, user)
 	return adaptercommon.CreateChatProps(&adaptercommon.ChatProps{
-		Model:             form.Model,
-		Message:           messages,
-		MaxTokens:         form.MaxTokens,
-		PresencePenalty:   form.PresencePenalty,
-		FrequencyPenalty:  form.FrequencyPenalty,
-		RepetitionPenalty: form.RepetitionPenalty,
-		Temperature:       form.Temperature,
-		TopP:              form.TopP,
-		TopK:              form.TopK,
-		Tools:             form.Tools,
-		ToolChoice:        form.ToolChoice,
-		User:              upstreamUser,
-		Metadata:          metadata,
+		Model:      form.Model,
+		Message:    messages,
+		MaxTokens:  form.MaxTokens,
+		Tools:      form.Tools,
+		ToolChoice: form.ToolChoice,
+		User:       upstreamUser,
+		Metadata:   metadata,
 	}, buffer)
 }
 

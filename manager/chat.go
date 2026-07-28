@@ -123,17 +123,11 @@ func createChatTask(
 			cache, buffer,
 			auth.GetGroup(db, user),
 			adaptercommon.CreateChatProps(&adaptercommon.ChatProps{
-				Model:             model,
-				Message:           segment,
-				MaxTokens:         instance.GetMaxTokens(),
-				Temperature:       instance.GetTemperature(),
-				TopP:              instance.GetTopP(),
-				TopK:              instance.GetTopK(),
-				PresencePenalty:   instance.GetPresencePenalty(),
-				FrequencyPenalty:  instance.GetFrequencyPenalty(),
-				RepetitionPenalty: instance.GetRepetitionPenalty(),
-				User:              upstreamUser,
-				Metadata:          metadata,
+				Model:     model,
+				Message:   segment,
+				MaxTokens: instance.GetMaxTokens(),
+				User:      upstreamUser,
+				Metadata:  metadata,
 			}, buffer),
 
 			// the function to handle the chunk data

@@ -63,12 +63,6 @@ export type ChatProps = {
   mcp_plugin_id?: number;
 
   max_tokens?: number;
-  temperature?: number;
-  top_p?: number;
-  top_k?: number;
-  presence_penalty?: number;
-  frequency_penalty?: number;
-  repetition_penalty?: number;
 };
 
 type StreamCallback = (id: number, message: StreamMessage) => void;

@@ -94,15 +94,13 @@ type StreamDelta struct {
 }
 
 type ChatRequest struct {
-	AppID       int64             `json:"app_id"`
-	SecretID    string            `json:"secret_id"`
-	Timestamp   int               `json:"timestamp"`
-	Expired     int               `json:"expired"`
-	QueryID     string            `json:"query_id"`
-	Temperature float64           `json:"temperature"`
-	TopP        float64           `json:"top_p"`
-	Stream      int               `json:"stream"`
-	Messages    []globals.Message `json:"messages"`
+	AppID     int64             `json:"app_id"`
+	SecretID  string            `json:"secret_id"`
+	Timestamp int               `json:"timestamp"`
+	Expired   int               `json:"expired"`
+	QueryID   string            `json:"query_id"`
+	Stream    int               `json:"stream"`
+	Messages  []globals.Message `json:"messages"`
 }
 
 type ChatResponse struct {
@@ -138,16 +136,15 @@ func NewInstance(appId int64, endpoint string, credential *Credential) *Client {
 	}
 }
 
-func NewRequest(mod int, messages []globals.Message, temperature *float32, topP *float32) ChatRequest {
+func NewRequest(mod int, messages []globals.Message) ChatRequest {
 	queryID := uuid.NewString()
+	// 采样策略统一交由上游模型默认值，避免不同模型对固定参数的严格校验。
 	return ChatRequest{
-		Timestamp:   int(time.Now().Unix()),
-		Expired:     int(time.Now().Unix()) + 24*60*60,
-		Temperature: 0,
-		TopP:        0.8,
-		Messages:    messages,
-		QueryID:     queryID,
-		Stream:      mod,
+		Timestamp: int(time.Now().Unix()),
+		Expired:   int(time.Now().Unix()) + 24*60*60,
+		Messages:  messages,
+		QueryID:   queryID,
+		Stream:    mod,
 	}
 }
 
@@ -276,8 +273,6 @@ func (t *Client) buildURL(req ChatRequest) string {
 	params = append(params, "secret_id="+req.SecretID)
 	params = append(params, "timestamp="+strconv.Itoa(req.Timestamp))
 	params = append(params, "query_id="+req.QueryID)
-	params = append(params, "temperature="+strconv.FormatFloat(req.Temperature, 'f', -1, 64))
-	params = append(params, "top_p="+strconv.FormatFloat(req.TopP, 'f', -1, 64))
 	params = append(params, "stream="+strconv.Itoa(req.Stream))
 	params = append(params, "expired="+strconv.Itoa(req.Expired))
 	params = append(params, fmt.Sprintf("messages=[%s]", t.getMessages(req.Messages)))

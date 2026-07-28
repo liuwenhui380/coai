@@ -39,6 +39,13 @@ func (c *ChatProps) SetupBuffer(buf *utils.Buffer) {
 }
 
 func CreateChatProps(props *ChatProps, buffer *utils.Buffer) *ChatProps {
+	// 采样参数在不同上游间约束差异很大，ChatNio 统一交由模型使用服务端默认值。
+	props.Temperature = nil
+	props.TopP = nil
+	props.TopK = nil
+	props.PresencePenalty = nil
+	props.FrequencyPenalty = nil
+	props.RepetitionPenalty = nil
 	props.SetupBuffer(buffer)
 	return props
 }

@@ -10,32 +10,7 @@ import (
 	"testing"
 )
 
-func TestGetChatBodyOmitsSamplingControlsForClaudeCompatibleModels(t *testing.T) {
-	temperature := float32(0.7)
-	topP := float32(0.9)
-	instance := NewChatInstance("https://example.com", "test-key")
-
-	body := instance.GetChatBody(&adaptercommon.ChatProps{
-		OriginalModel: "claude-opus-4-7",
-		Model:         "claude-opus-4-7",
-		Message:       []globals.Message{{Role: globals.User, Content: "hello"}},
-		Temperature:   &temperature,
-		TopP:          &topP,
-	}, false)
-
-	raw, err := json.Marshal(body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if strings.Contains(string(raw), "temperature") {
-		t.Fatalf("Claude-compatible OpenAI request JSON should not contain temperature: %s", raw)
-	}
-	if strings.Contains(string(raw), "top_p") {
-		t.Fatalf("Claude-compatible OpenAI request JSON should not contain top_p: %s", raw)
-	}
-}
-
-func TestGetChatBodyOmitsSamplingControlsForKimiCodingCompatibleModels(t *testing.T) {
+func TestGetChatBodyOmitsSamplingControlsForAllModels(t *testing.T) {
 	value := float32(0.7)
 	instance := NewChatInstance("https://example.com", "test-key")
 	models := []struct {
@@ -43,6 +18,9 @@ func TestGetChatBodyOmitsSamplingControlsForKimiCodingCompatibleModels(t *testin
 		originalModel string
 		model         string
 	}{
+		{name: "ordinary compatible model", originalModel: "gpt-4o", model: "gpt-4o"},
+		{name: "new OpenAI model", originalModel: "gpt-5.5", model: "gpt-5.5"},
+		{name: "Claude compatible model", originalModel: "claude-opus-4-7", model: "claude-opus-4-7"},
 		{name: "original k3 model", originalModel: "k3-256k", model: "mapped-k3-model"},
 		{name: "mapped kimi coding model", originalModel: "internal-kimi-alias", model: "kimi-for-coding"},
 	}
@@ -69,7 +47,7 @@ func TestGetChatBodyOmitsSamplingControlsForKimiCodingCompatibleModels(t *testin
 			}
 			for _, field := range []string{"temperature", "top_p", "presence_penalty", "frequency_penalty"} {
 				if _, ok := request[field]; ok {
-					t.Fatalf("Kimi Coding-compatible request JSON must not contain %s: %s", field, raw)
+					t.Fatalf("%s request JSON must not contain %s: %s", item.name, field, raw)
 				}
 			}
 		})
