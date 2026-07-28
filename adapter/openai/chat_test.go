@@ -35,6 +35,47 @@ func TestGetChatBodyOmitsSamplingControlsForClaudeCompatibleModels(t *testing.T)
 	}
 }
 
+func TestGetChatBodyOmitsSamplingControlsForKimiCodingCompatibleModels(t *testing.T) {
+	value := float32(0.7)
+	instance := NewChatInstance("https://example.com", "test-key")
+	models := []struct {
+		name          string
+		originalModel string
+		model         string
+	}{
+		{name: "original k3 model", originalModel: "k3-256k", model: "mapped-k3-model"},
+		{name: "mapped kimi coding model", originalModel: "internal-kimi-alias", model: "kimi-for-coding"},
+	}
+
+	for _, item := range models {
+		t.Run(item.name, func(t *testing.T) {
+			body := instance.GetChatBody(&adaptercommon.ChatProps{
+				OriginalModel:    item.originalModel,
+				Model:            item.model,
+				Message:          []globals.Message{{Role: globals.User, Content: "hello"}},
+				Temperature:      &value,
+				TopP:             &value,
+				PresencePenalty:  &value,
+				FrequencyPenalty: &value,
+			}, false)
+
+			raw, err := json.Marshal(body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var request map[string]interface{}
+			if err := json.Unmarshal(raw, &request); err != nil {
+				t.Fatal(err)
+			}
+			for _, field := range []string{"temperature", "top_p", "presence_penalty", "frequency_penalty"} {
+				if _, ok := request[field]; ok {
+					t.Fatalf("Kimi Coding-compatible request JSON must not contain %s: %s", field, raw)
+				}
+			}
+		})
+	}
+}
+
 func TestGetChatBodyIncludesUserAndMetadata(t *testing.T) {
 	instance := NewChatInstance("https://example.com", "test-key")
 
