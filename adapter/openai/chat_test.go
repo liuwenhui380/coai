@@ -59,6 +59,48 @@ func TestGetChatBodyIncludesUserAndMetadata(t *testing.T) {
 	}
 }
 
+func TestGetChatBodyOmitsChatnioIdentityForCompatibleUpstreams(t *testing.T) {
+	instance := NewChatInstance("https://example.com", "test-key")
+	models := []struct {
+		name          string
+		originalModel string
+		model         string
+	}{
+		{name: "kimi", originalModel: "kimi-k2.5", model: "kimi-k2.5"},
+		{name: "claude", originalModel: "claude-opus-4-8", model: "anthropic/claude-opus-4-8"},
+	}
+
+	for _, item := range models {
+		t.Run(item.name, func(t *testing.T) {
+			body := instance.GetChatBody(&adaptercommon.ChatProps{
+				OriginalModel: item.originalModel,
+				Model:         item.model,
+				Message:       []globals.Message{{Role: globals.User, Content: "hello"}},
+				User:          "chatnio-1234567890abcdef",
+				Metadata: map[string]interface{}{
+					"chatnio_user_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+					"chat_id":           "42",
+				},
+			}, false)
+
+			raw, err := json.Marshal(body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var request map[string]interface{}
+			if err := json.Unmarshal(raw, &request); err != nil {
+				t.Fatal(err)
+			}
+			if _, ok := request["user"]; ok {
+				t.Fatalf("%s request JSON must not contain ChatNio user identity: %s", item.name, raw)
+			}
+			if _, ok := request["metadata"]; ok {
+				t.Fatalf("%s request JSON must not contain ChatNio metadata: %s", item.name, raw)
+			}
+		})
+	}
+}
+
 func TestCreateChatRequestDelegatesGeminiImageModelsToNativeGenerateContent(t *testing.T) {
 	oldAcceptImageStore := globals.AcceptImageStore
 	oldNotifyURL := globals.NotifyUrl

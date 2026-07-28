@@ -34,6 +34,16 @@ func (c *ChatInstance) GetLatestPrompt(props *adaptercommon.ChatProps) string {
 	return props.Message[len(props.Message)-1].Content
 }
 
+func isChatGPTWebModel(models ...string) bool {
+	for _, model := range models {
+		model = strings.ToLower(strings.TrimSpace(model))
+		if strings.HasPrefix(model, "chatgpt-") {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) interface{} {
 	if props.Model == globals.GPT3TurboInstruct {
 		// for completions
@@ -74,8 +84,12 @@ func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) 
 		TopP:             topP,
 		Tools:            props.Tools,
 		ToolChoice:       props.ToolChoice,
-		User:             props.User,
-		Metadata:         props.Metadata,
+	}
+
+	// ChatNio 身份字段只供 ChatGPT-Mirror 做会话隔离，不能泄漏给严格校验请求体的兼容上游。
+	if isChatGPTWebModel(props.OriginalModel, props.Model) {
+		request.User = props.User
+		request.Metadata = props.Metadata
 	}
 
 	if isNewModel {
